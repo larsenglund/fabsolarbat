@@ -5,7 +5,7 @@ Goal: a **modern, sleek, fast** analysis tool that feels like a crafted product,
 ## Principles
 
 1. **The answer first.** The single number people came for — *annual savings and payback* — is the hero of the results view. Everything else supports it.
-2. **Instant feedback.** Every parameter change updates a preview within 100 ms (heuristic engine), with the exact LP result streaming in seconds later. The UI never blocks; stale results dim, they don't disappear.
+2. **Never block.** Parameter changes trigger a debounced recompute in a worker; the previous results stay visible but dimmed until fresh numbers arrive (seconds, with per-day progress). No spinners over empty space.
 3. **Progressive depth.** Overview → monthly → single day → single hour. Each level is one click, and each chart is a door to the level below it.
 4. **Honest numbers.** Assumptions are visible next to results (forecast mode, model variant, extrapolation warnings). No hidden defaults that flatter the battery.
 5. **Both themes are first-class.** Light and dark ship together; charts, states and contrast are validated in both.
@@ -41,18 +41,17 @@ Chart series palette (categorical, color-blind-checked in both themes): accent t
 
 - 4 px base grid; cards on a 12-column layout, max content width 1320 px.
 - Radius: 8 px controls, 12 px cards, 999 px chips. Borders over shadows; a single soft shadow tier for popovers only.
-- Density toggle on tables (comfortable / compact).
 
 ### Motion
 
-- 120–180 ms ease-out for state changes; number tickers animate value changes on result cards (respecting `prefers-reduced-motion`).
+- 120–180 ms ease-out for state changes, respecting `prefers-reduced-motion`. No decorative animation.
 - Simulation progress: thin accent progress bar under the header + per-day count, never a modal spinner.
 
 ## Application layout
 
 ```
 ┌────────────────────────────────────────────────────────────┐
-│ Header: wordmark · dataset chip · scenario tabs · theme ⋅ ⧉ │
+│ Header: wordmark · dataset chip · baseline pin · theme ⋅ ⧉ │
 ├──────────────┬─────────────────────────────────────────────┤
 │  Parameter   │  Results canvas                             │
 │  sidebar     │  ┌ Hero row: Savings/yr · Payback · ROI ┐   │
@@ -67,8 +66,8 @@ Chart series palette (categorical, color-blind-checked in both themes): accent t
 
 1. **Landing / empty state** — one-sentence pitch, two primary actions: *“Explore sample data”* (loads instantly) and *“Upload your data”*. Small print: “Your data never leaves your browser.”
 2. **Parameter sidebar** — grouped, collapsible: Battery · Tariffs & prices · Strategy · Economics. Sliders paired with numeric inputs and unit suffixes; sensible ranges; “reset group” affordances; advanced params behind a disclosure. Every control has a one-line plain-language tooltip.
-3. **Hero results row** — three stat tiles: *Annual savings* (SEK + %), *Payback* (years, colored by viability), *10-yr net vs. index fund*. Each tile shows a delta chip when compared against another scenario.
-4. **Scenario tabs** — save the current parameter set as a named scenario; up to 4 compared side-by-side (overlaid projection curves, grouped monthly bars, hero deltas). Scenarios encode to the URL for sharing.
+3. **Hero results row** — three stat tiles: *Annual savings* (SEK + %), *Payback* (years, colored by viability), *10-yr net vs. index fund*. Each tile shows a delta chip against the pinned baseline, when one is set.
+4. **Baseline pin** — one click freezes the current result as a baseline; subsequent parameter changes show deltas everywhere (hero chips, overlaid projection curve). The active scenario's parameters encode to the URL for sharing.
 5. **Hourly explorer** — full-year price + consumption + solar + SoC as synced uPlot panes; brush to zoom; clicking a day opens the drill-down.
 6. **Day drill-down** — stacked hourly flow chart (S→B, G→B, B→H, G→H) over the price curve, SoC line, and the classic hourly breakdown table from the Python tool; prev/next day paging; “most/least profitable day” shortcuts.
 7. **Upload wizard** — 3 steps (file → mapping/units → validation report). Live-parsed preview table, auto-detected mapping pre-filled, warnings as inline callouts with counts and examples. Ends on a dataset summary card (coverage, totals, average price).

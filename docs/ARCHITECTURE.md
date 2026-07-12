@@ -20,14 +20,15 @@ The whole simulation — data parsing, LP optimization, statistics — runs in t
 | UI framework | **React 19** | Ecosystem, familiarity, fine for a dashboard SPA |
 | Styling | **Tailwind CSS v4** + design tokens from [DESIGN.md](DESIGN.md) | Fast iteration, consistent system, trivial dark mode |
 | State | **Zustand** | Small, no boilerplate; one store for dataset, one for scenario params, one for results |
-| LP solver | **`highs` (HiGHS → WASM)** | Same problem class the Python CBC solver handled; state-of-the-art, MIT-licensed, ~1 MB wasm loaded lazily inside the worker |
-| Simulation host | **Web Worker** (Comlink) | Keeps 365 LP solves off the main thread; posts per-day progress for a live progress UI |
+| LP solver | **`highs` (HiGHS → WASM)** | Same problem class the Python CBC solver handled; state-of-the-art, MIT-licensed, wasm loaded lazily inside the worker. (Pure-JS solvers like jsLPSolver were considered — no wasm asset to serve — but are unmaintained and numerically weaker; parity with the Python LP is the whole point.) |
+| Simulation host | **Web Worker**, plain typed `postMessage` | Keeps 365 LP solves off the main thread. One worker, two message types (run, progress) — no RPC library needed |
 | CSV parsing | **Papa Parse** | Streaming, handles quoting/BOM; we add locale sniffing (`;` + decimal comma) on top |
-| Charts | **Recharts** for aggregates (monthly bars, payback curves) + **uPlot** for dense hourly series (8,760-point timelines, day drill-down) | Recharts is ergonomic; uPlot renders 10k+ points at 60 fps where Recharts chokes |
-| Dates | **date-fns** (+ `@date-fns/tz`) | Hourly data with DST transitions (8,783 ≠ 8,760 hours in the source data — CET/CEST) |
-| Unit tests | **Vitest** | Engine golden-file tests, parser fixtures |
-| E2E tests | **Playwright** | Upload flow, parameter changes, chart rendering |
-| Lint/format | **ESLint + Prettier** | CI-enforced |
+| Charts | **uPlot** for time series (hourly explorer, projections); aggregate charts (12 monthly bars, day-flow stacks) as small hand-rolled SVG components | One tiny (~45 kB) chart dependency that renders 8,760 points at 60 fps; a 12-bar chart doesn't need a library |
+| Dates | none — small fixed-format timestamp parser | Input formats are known and timestamps are naive local hours; DST duplicates/gaps are detected in validation, not resolved by a tz library |
+| Persistence | **idb-keyval** | Two-function IndexedDB wrapper for caching the parsed dataset locally |
+| Unit tests | **Vitest** | Engine golden-file tests, invariant tests on seeded synthetic data, parser fixtures |
+| E2E tests | **Playwright** (small smoke suite) | Sample-data happy path, upload wizard, URL round-trip — nothing screenshot-based |
+| Lint/format | **Biome** | One fast tool instead of ESLint + Prettier + plugin config |
 | CI/CD | **GitHub Actions → GitHub Pages** | Test + build on PR; deploy on merge to `main` |
 
 ## Repository layout
@@ -43,7 +44,6 @@ fabsolarbat/
 │   │   ├── costModel.ts     # VAT, transfer fee, sell-price models
 │   │   ├── battery.ts       # SoC bounds, degradation, power limits
 │   │   ├── lp.ts            # LP problem builder for one 35 h window (HiGHS)
-│   │   ├── heuristic.ts     # fast greedy strategy (instant preview + LP sanity bound)
 │   │   ├── solarForecast.ts # perfect / simple / weighted / hybrid / persistence
 │   │   ├── simulate.ts      # rolling-window annual driver, cycle & SoC carry-over
 │   │   └── finance.ts       # payback, ROI, NPV, index-fund comparison, 10 yr projection
@@ -137,12 +137,11 @@ Degradation: effective capacity = `usableCapacity · (1 − (1 − eol%) · cycl
 ```
 UI thread                     Worker
 ────────────                  ──────────────────────────────
-params/dataset change  ──►    debounce → run heuristic (ms)  ──► instant preview results
-                              then run LP year (~seconds)    ──► per-day progress events
-                                                             ──► final AnnualResult replaces preview
+params/dataset change  ──►    debounce (~300 ms) → LP year   ──► per-day progress events
+                                                             ──► AnnualResult (cached by hash)
 ```
 
-The heuristic (greedy threshold arbitrage, ported from `battery_analysis_10kWh_SEK.py`) gives sub-100 ms feedback on every slider move; the LP result streams in and replaces it. Results are memoized by hash(params + dataset).
+One engine, one source of truth. While a run is in flight the previous results stay visible but dimmed, with a slim progress bar; results are memoized by hash(params + dataset) so revisiting a setting is instant. If full-year runs ever prove too slow on low-end devices, the fallback is a coarse preview strategy — deliberately not built until proven necessary.
 
 ## Data upload pipeline
 
@@ -155,12 +154,12 @@ The heuristic (greedy threshold arbitrage, ported from `battery_analysis_10kWh_S
 
 **Validation & repair** (surfaced in a pre-flight report, never silent):
 
-- Timestamp parsing incl. DST (duplicated/missing hour), gap detection, coverage summary
+- Timestamp parsing (small fixed-format parser) incl. DST duplicated/missing hour, gap detection, coverage summary
 - Negative/absurd values flagged; unit sanity heuristics (e.g. consumption mean ≫ 100 ⇒ probably W not kWh — suggest, don't auto-fix)
 - Price series and energy series may have different date ranges → intersect, report dropped hours
 - Datasets shorter than a year are allowed; annualized figures are extrapolated and clearly labeled
 
-**Persistence:** parsed datasets cached in IndexedDB (local only) so a reload doesn't require re-upload. Explicit "remove my data" control.
+**Persistence:** parsed dataset cached locally via idb-keyval so a reload doesn't require re-upload. Explicit "remove my data" control.
 
 ## Deployment
 
@@ -174,6 +173,7 @@ The heuristic (greedy threshold arbitrage, ported from `battery_analysis_10kWh_S
 |---|---|
 | First contentful paint (Pages, cold) | < 1.5 s |
 | Bundle (initial, gz) | < 250 kB (wasm + uPlot lazy) |
-| Heuristic preview after slider change | < 100 ms |
-| Full-year LP run (M2-class laptop) | < 5 s, with progress bar |
+| Full-year LP run (M2-class laptop) | < 5 s, with progress bar; UI stays interactive throughout |
 | Hourly chart pan/zoom (8,760 pts) | 60 fps |
+
+Budgets are checked manually (Lighthouse + a timed engine run script) before milestones — not enforced as CI gates, which tend to be flaky and become maintenance work themselves.
