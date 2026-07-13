@@ -14,7 +14,9 @@ Built on the analysis work in [`larsenglund/notes/elpris batteri`](https://githu
 
 ## Status
 
-📋 **Planning phase.** The full development plan lives in [`docs/`](docs/):
+🏗️ **M0 shipped** — project scaffold, tests and the build/deploy pipeline are in place, serving a placeholder landing page. Next: M1, porting the simulation engine to TypeScript with golden-file validation against the Python results.
+
+The full development plan lives in [`docs/`](docs/):
 
 | Document | Contents |
 |---|---|
@@ -32,6 +34,25 @@ Built on the analysis work in [`larsenglund/notes/elpris batteri`](https://githu
 - `hourly_power_price.csv` — raw ENTSO-E day-ahead price export (EUR/MWh) — upload-parser test fixture
 - `eur_to_sek_2024.csv` — daily EUR→SEK exchange rates
 - `annual_battery_results.csv` — golden results from the validated Python LP analysis, used to verify the TypeScript engine
+
+## Development
+
+Requires Node ≥ 22.
+
+```sh
+npm install
+npm run dev        # dev server
+npm run lint       # Biome (format + lint)
+npm run test       # Vitest unit tests
+npm run build      # typecheck + production build → dist/
+npm run test:e2e   # Playwright smoke test against the production build
+```
+
+## Deployment
+
+Every merge to `main` runs CI (lint → unit tests → build → e2e) and deploys `dist/` to GitHub Pages via `.github/workflows/ci.yml`.
+
+One-time setup: in the repo settings, set **Settings → Pages → Build and deployment → Source** to **GitHub Actions**. The site then publishes at `https://larsenglund.github.io/fabsolarbat/`.
 
 ## Privacy
 

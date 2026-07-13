@@ -1,0 +1,47 @@
+@import "tailwindcss";
+
+/* Design tokens — docs/DESIGN.md. Semantic values switch with the color scheme;
+   Tailwind utilities (bg-bg, text-text-muted, …) map onto them below. */
+:root {
+  --bg: #faf9f5;
+  --surface: #ffffff;
+  --surface-2: #f0eee6;
+  --border: #e3e0d5;
+  --text: #1f1e1b;
+  --text-muted: #6e6b63;
+  --accent: #c15f3c;
+  --positive: #2e7d5b;
+  --negative: #b3382e;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1f1e1b;
+    --surface: #282724;
+    --surface-2: #31302c;
+    --border: #3d3b36;
+    --text: #f0eee6;
+    --text-muted: #a6a39a;
+    --accent: #d97757;
+    --positive: #4caf8b;
+    --negative: #e06156;
+  }
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-border: var(--border);
+  --color-text: var(--text);
+  --color-text-muted: var(--text-muted);
+  --color-accent: var(--accent);
+  --color-positive: var(--positive);
+  --color-negative: var(--negative);
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+}
+
+body {
+  @apply bg-bg font-sans text-text antialiased;
+}
