@@ -14,7 +14,7 @@ Built on the analysis work in [`larsenglund/notes/elpris batteri`](https://githu
 
 ## Status
 
-🏗️ **M0 shipped** — project scaffold, tests and the build/deploy pipeline are in place, serving a placeholder landing page. Next: M1, porting the simulation engine to TypeScript with golden-file validation against the Python results.
+🏗️ **M1 shipped** — the simulation engine is ported to TypeScript (LP optimization on HiGHS WASM, hybrid solar forecasting, degradation, rolling day-ahead windows) and validated against the Python golden results: annual savings within 0.002%, worst per-day cost deviation ~1 öre, full-year run in ~1.5 s. Next: M2, the core UI.
 
 The full development plan lives in [`docs/`](docs/):
 

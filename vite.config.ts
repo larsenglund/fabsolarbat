@@ -8,7 +8,7 @@ export default defineConfig({
   // Relative base so the same build works on GitHub Pages (/fabsolarbat/) and locally.
   base: "./",
   test: {
-    include: ["src/**/*.test.ts"],
+    include: ["src/**/*.test.ts", "tests/**/*.test.ts"],
     environment: "node",
   },
 });
