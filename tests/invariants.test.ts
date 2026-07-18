@@ -104,6 +104,16 @@ describe("engine invariants on seeded synthetic data", () => {
     }
     // A battery worth its name should save money over two synthetic weeks.
     expect(result.totalSavings).toBeGreaterThan(0);
+
+    // Executed accounting: internally consistent per day, and annual executed
+    // hours partition the covered range exactly (24 h/day + final full window).
+    for (const d of result.days) {
+      expect(d.executedSavings).toBeCloseTo(d.executedOriginalCost - d.executedOptimizedCost, 9);
+      expect(d.executedBatteryToHome).toBeLessThanOrEqual(d.batteryToHome + 1e-9);
+    }
+    const executedHourSum = result.days.reduce((s, d) => s + d.executedHours, 0);
+    const expectedHours = (result.days.length - 1) * 24 + DEFAULT_PARAMS.strategy.windowHours;
+    expect(executedHourSum).toBe(expectedHours);
   });
 
   it("a battery with zero capacity and zero power changes nothing", async () => {

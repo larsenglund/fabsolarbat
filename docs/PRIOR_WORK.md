@@ -84,8 +84,17 @@ Results varied substantially by model refinement — an object lesson in why int
 
 - Naive heuristic, 10 kWh, sell-at-spot baseline: ~679–900 SEK/yr → 55–74 yr payback (not viable)
 - No-sell model + transfer costs, heuristic: ~1,227–2,730 SEK/yr
-- **LP-optimal, 35 h window, no-sell + transfer costs: ~8,300 SEK/yr (~21% cost reduction) → 3.6–7.2 yr payback depending on system cost — viable below ~40 kSEK**
-- A vendor's simplistic "1 full cycle/day × 1.5 SEK/kWh" claim (~5,585 SEK/yr) sits between the heuristic and LP results; the LP analysis shows *why* both the vendor's math and the naive simulation are wrong.
+- LP-optimal, 35 h window, no-sell + transfer costs, **as reported by the Python analysis**: ~8,300 SEK/yr (~21%) → 3.6–7.2 yr payback — *see the corrections below; this figure is inflated*
+- A vendor's simplistic "1 full cycle/day × 1.5 SEK/kWh" claim (~5,585 SEK/yr) sits between the heuristic and LP results.
+
+## ⚠️ Corrections found while porting (M1 code review)
+
+Auditing the model during the TypeScript port surfaced accounting errors in the Python analysis. The LP itself is sound; the *reporting* around it was not:
+
+1. **Window-overlap double-counting (large).** Each 35 h window is summed in full into its day's result, but windows advance only 24 h — every 13:00–24:00 period lands in two windows, and energy charged once gets its discharge value counted in both the never-executed window tail *and* the next day's executed hours. Summing windows gives an annual baseline of 37,905 SEK vs the true 25,164 SEK, and savings of 7,772 SEK vs the true **3,967 SEK/yr (15.8% cost reduction)** when each hour is counted exactly once ("executed-hours" accounting: the first 24 h of each window, since the tail is re-planned the next day). Battery cycles are likewise 527/yr window-summed vs **336/yr executed**.
+2. **Payback off-by-one (+1 year).** The Python payback interpolation adds the year fraction to the 1-indexed year (`year + fraction` instead of `year − 1 + fraction`), overstating every payback figure by exactly one year. The engine fixes this.
+3. **Corrected bottom line (no-sell model, executed accounting, degradation-aware):** ~3,967 SEK/yr savings; payback ≈ **11 yr at 40 kSEK / 14 yr at 50 kSEK / 24 yr at 75 kSEK** system cost; 10-year ROI is negative at all of those price points. The prior "viable below 40 kSEK" conclusion does not survive the corrections.
+4. **The no-sell caveat cuts further.** The model values solar diverted into the battery at zero, but a real Swedish PV household sells excess solar (spot + skattereduktion 0.60 SEK/kWh through 2025 + nätnytta). The ~2,480 kWh/yr the optimizer routes into the battery has a real opportunity cost on the order of 800–2,200 SEK/yr depending on the export-compensation rules assumed — pushing net benefit lower still. Modeling export revenue properly is on the roadmap (sell-at-spot variant).
 
 Golden data: `annual_battery_results.csv` contains the per-day LP results (costs, savings, flows, SoC, cycles, degradation) for the full year — the primary regression fixture for the web engine.
 
@@ -93,6 +102,9 @@ Golden data: `annual_battery_results.csv` contains the per-day LP results (costs
 
 1. Perfect consumption foreknowledge within the window (solar can be estimated, consumption is not yet).
 2. No effekttariff (peak-power tariff) modeling — no data was available, but the tool should make this a pluggable cost component since Swedish DSOs are rolling these out.
-3. Battery degradation is linear-in-cycles only (no calendar aging).
-4. Grid sell-price modeling is simplistic (spot only, no skattereduktion/energy-tax rebate on export).
+3. Battery degradation is linear-in-cycles only (no calendar aging), and the in-simulation cycle counter uses window-summed discharge (inflated ~1.57×, i.e. degradation is conservative). Finance projections use executed cycles.
+4. Grid sell-price modeling is absent (no-sell); foregone export revenue on solar diverted to the battery is not costed (see Corrections §4).
 5. Single fixed transfer fee per kWh (no time-of-use grid tariffs).
+6. The house main fuse (~13.9 kW for 20 A × 400 V) is computed in the Python code but never enforced as a constraint — on the 2024 data the optimizer schedules grid draw up to ~19.8 kW in 56 hours, which a real installation could not do. A grid-draw cap parameter is planned.
+7. The meter data is hourly-netted, so the model permits same-hour solar "pass-through" via the battery (~259 kWh/yr here, worth ~250–300 SEK) — defensible given sub-hourly variation, but worth knowing.
+8. The hybrid solar forecast's "historical morning average" includes today's own morning rows, damping its scale factor toward 1 (ported faithfully).

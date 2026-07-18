@@ -130,6 +130,11 @@ export interface DayResult {
   /** Naive ms of the window start (planning hour). */
   t: number;
   month: number;
+  /**
+   * Window-summed metrics (all 35 h) — kept for parity with the Python golden
+   * data. NOTE: consecutive windows overlap by 11 h, so summing these across
+   * days double-counts. Use the executed* fields for honest aggregates.
+   */
   originalCost: number;
   optimizedCost: number;
   savings: number;
@@ -150,13 +155,35 @@ export interface DayResult {
   solarEstimatedTotal: number;
   solarEstimationError: number;
   solarEstimationRmse: number;
+  /**
+   * Executed-hours metrics: only the hours this window actually governs —
+   * the first 24 h (the tail is re-planned by the next day's window), or the
+   * full window on the final simulated day. Summing these across days counts
+   * every calendar hour exactly once.
+   */
+  executedHours: number;
+  executedOriginalCost: number;
+  executedOptimizedCost: number;
+  executedSavings: number;
+  executedBatteryToHome: number;
 }
 
 export interface AnnualResult {
   days: DayResult[];
+  /**
+   * Window-summed totals (Python-parity numbers). Inflated ~1.5× by the 11 h
+   * window overlap — never present these as annual figures.
+   */
   totalOriginalCost: number;
   totalOptimizedCost: number;
   totalSavings: number;
   savingsPct: number;
   totalCycles: number;
+  /** Honest annual totals: every simulated calendar hour counted once. */
+  executedOriginalCost: number;
+  executedOptimizedCost: number;
+  executedSavings: number;
+  executedSavingsPct: number;
+  /** Cycles from executed discharge only — use this for finance projections. */
+  executedCycles: number;
 }

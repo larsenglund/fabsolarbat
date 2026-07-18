@@ -17,13 +17,15 @@ The what/when/how of building, testing and deploying the Home Battery Profitabil
 - Built-in 2024 SE3 sample dataset, loads instantly on “Explore sample data”
 - Upload own data: canonical CSV, grid-operator export (Swedish locale), ENTSO-E prices + FX, generic column-mapping wizard; validation report; IndexedDB persistence
 - Full parameter panel (battery, tariffs, strategy, economics — see `ScenarioParams` in ARCHITECTURE.md)
-- Simulation: LP-optimal rolling 35 h day-ahead strategy (HiGHS wasm in a worker); no-sell and sell-at-spot variants; 5 solar-forecast modes; degradation
+- Simulation: LP-optimal rolling 35 h day-ahead strategy (HiGHS wasm in a worker); no-sell model; 5 solar-forecast modes; degradation; executed-hours accounting for honest annual figures
 - Results: hero stats (savings, payback, ROI/NPV vs index fund), monthly breakdown, 10-year degradation-aware projection, hourly explorer, day drill-down with flows/SoC/table
 - Baseline pin (A/B): freeze the current result as a baseline, see deltas as parameters change; active scenario encoded in the URL for sharing
 - Light/dark themes, responsive down to tablet; mobile gets results-first layout
 
 ### v2 candidates (explicitly out of v1 scope)
 
+- Sell-at-spot model with proper export valuation (spot + skattereduktion + nätnytta) — the no-sell model's zero-valuation of diverted solar overstates battery benefit (docs/PRIOR_WORK.md § Corrections)
+- House main-fuse grid-draw cap as an LP constraint
 - Effekttariff (monthly peak-power fees) as a pluggable cost component
 - Battery-size / system-cost sensitivity sweeps (heatmap: capacity × cost → payback)
 - Consumption forecasting (today: perfect within window), EV charging profiles

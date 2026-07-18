@@ -147,14 +147,16 @@ describe("golden-file validation against the Python LP analysis", () => {
       err: Math.abs(result.days[i].initialSoc - g.initialSoc),
     }));
     expect(Math.max(...socDiffs.map((d) => d.err)), worst("initial_soc", socDiffs)).toBeLessThan(
-      0.5,
+      0.02,
     );
 
     const finalCyclesGot = result.totalCycles;
     const finalCyclesWant = golden[golden.length - 1].totalCycles;
     expect(Math.abs(finalCyclesGot - finalCyclesWant) / finalCyclesWant).toBeLessThan(0.01);
 
-    // Annual totals: the headline numbers, within 0.1%.
+    // Window-summed annual totals: Python-parity numbers within 0.1%.
+    // (These are inflated ~1.5× by the 11 h window overlap — parity only,
+    // never headline figures. The executed* fields below are the honest ones.)
     const annualOriginalWant = golden.reduce((s, g) => s + g.originalCost, 0);
     const annualOptimizedWant = golden.reduce((s, g) => s + g.optimizedCost, 0);
     const annualSavingsWant = annualOriginalWant - annualOptimizedWant;
@@ -164,5 +166,31 @@ describe("golden-file validation against the Python LP analysis", () => {
     expect(Math.abs(result.totalSavings - annualSavingsWant) / annualSavingsWant).toBeLessThan(
       0.001,
     );
+
+    // Executed-hours accounting cross-check, computed INDEPENDENTLY of the
+    // engine: the executed spans must partition the simulated row range —
+    // first window start through the last window's end — counting every row
+    // exactly once, and the executed baseline must equal Σ consumption ×
+    // fullPrice over exactly those rows. (The last ~24 h of the dataset fall
+    // after the final window and are simulated by no window — the Python
+    // driver stops 35 h before the data end.)
+    const firstIdx = hours.findIndex((h) => h.t === golden[0].t);
+    const lastStartIdx = hours.findIndex((h) => h.t === result.days[result.days.length - 1].t);
+    const covered = hours.slice(firstIdx, lastStartIdx + 35);
+    const independentBaseline = covered.reduce(
+      (s, h) => s + h.consumptionKwh * (h.priceSekPerKwh * 1.25 + 0.685),
+      0,
+    );
+    const executedHourSum = result.days.reduce((s, d) => s + d.executedHours, 0);
+    expect(executedHourSum).toBe(covered.length);
+    expect(
+      Math.abs(result.executedOriginalCost - independentBaseline) / independentBaseline,
+    ).toBeLessThan(1e-9);
+
+    // The honest savings must be meaningfully below the window-summed figure
+    // (overlap inflation) but still clearly positive.
+    expect(result.executedSavings).toBeGreaterThan(0);
+    expect(result.executedSavings).toBeLessThan(result.totalSavings);
+    expect(result.executedCycles).toBeLessThan(result.totalCycles);
   });
 });

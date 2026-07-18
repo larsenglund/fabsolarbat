@@ -92,7 +92,7 @@ interface ScenarioParams {
     eolCapacityPercent: number;     // default 70
     systemCostSek: number;          // default 75000
   };
-  house: { maxGridKw: number };     // default √3·20A·400V ≈ 13.9
+  house: { maxGridKw: number };     // default √3·20A·400V ≈ 13.9 — v2: not yet an LP constraint
   tariff: {
     vatMultiplier: number;          // default 1.25 (applied to spot)
     transferFeeSekPerKwh: number;   // default 0.685 (incl. VAT)
@@ -127,8 +127,12 @@ Constraints (per hour):
 2. `s2b[t] ≤ excessSolar[t]` (forecasted value during planning; actuals during accounting)
 3. `s2b[t] + g2b[t] ≤ maxPowerKw` ; `b2h[t] ≤ maxPowerKw`
 4. `b2h[t] ≤ consumption[t]` (battery only offsets load; no export from battery in v1)
-5. `g2h[t] + g2b[t] ≤ house.maxGridKw`
+5. SoC bounds: `minSoc ≤ soc[t] ≤ max(maxSoc, initialSoc)` — the ceiling admits charge carried from yesterday when degradation has shrunk today's maxSoc below it (the Python original was silently infeasible here)
 6. Terminal condition: `soc[T] ≥ initialSoc` is **not** imposed (matches Python); instead SoC at hour 24 carries to next day's window, which naturally values stored energy.
+
+NOT modeled (matching the Python original): a house main-fuse grid-draw cap — the optimizer can schedule grid draw above a real connection's limit in the cheapest hours; a `house.maxGridKw` constraint is a v2 candidate.
+
+**Accounting: windowed vs. executed.** Consecutive windows overlap by 11 h, and only a window's first 24 h are actually executed (the tail is re-planned the next day). Per-day results therefore carry two sets of figures: window-summed metrics (Python-parity, inflated ~1.5× when summed annually — used only by the golden tests) and `executed*` metrics that count every simulated hour exactly once — **all user-facing aggregates use the executed figures**, including cycles fed to the finance projection.
 
 Degradation: effective capacity = `usableCapacity · (1 − (1 − eol%) · cycles/cyclesToEol)`, cycles accumulated as `Σ b2h / usableCapacity`, linear continuation past EOL (floor 10%) — identical to the Python projection.
 

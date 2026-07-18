@@ -56,18 +56,28 @@ export function simulateYearSync(
   const lastOptTime = dataEnd - windowHours * HOUR_MS;
   const totalDays = Math.floor((lastOptTime - firstOpt.t) / DAY_MS) + 1;
 
+  // Determine all simulated window starts up front so executed-hours
+  // accounting can see where the NEXT window begins (a missing DST hour or a
+  // skipped day shifts it away from exactly 24 rows).
+  const starts: { time: number; startIdx: number; dayNumber: number }[] = [];
+  {
+    let dayNumber = 0;
+    for (let time = firstOpt.t; time <= lastOptTime; time += DAY_MS) {
+      dayNumber++;
+      const startIdx = indexByTime.get(time);
+      if (startIdx === undefined) continue; // missing timestamp — skip day, like Python
+      if (startIdx + windowHours > hours.length) break;
+      starts.push({ time, startIdx, dayNumber });
+    }
+  }
+
   const days: DayResult[] = [];
   let currentSoc = options.initialSoc ?? 0;
   let totalCycles = 0;
-  let dayNumber = 0;
 
-  for (let time = firstOpt.t; time <= lastOptTime; time += DAY_MS) {
-    dayNumber++;
+  for (let k = 0; k < starts.length; k++) {
+    const { time, startIdx, dayNumber } = starts[k];
     options.onProgress?.(dayNumber, totalDays);
-
-    const startIdx = indexByTime.get(time);
-    if (startIdx === undefined) continue; // missing timestamp (DST) — skip day, like Python
-    if (startIdx + windowHours > hours.length) break;
 
     const rows = hours.slice(startIdx, startIdx + windowHours);
     const usesEstimates = solarForecast !== null;
@@ -90,6 +100,24 @@ export function simulateYearSync(
         : 0;
     totalCycles += dailyCycles;
     currentSoc = hourly.length >= 24 ? hourly[23].soc : summary.finalSoc;
+
+    // Executed-hours accounting: this window only governs reality until the
+    // next simulated window starts (normally 24 rows later; 23 across the
+    // missing DST hour; more after a skipped day, capped at the window). The
+    // final window keeps its full length. Summed across days, every row in
+    // the simulated range lands in exactly one window.
+    const executedHours =
+      k < starts.length - 1
+        ? Math.min(hourly.length, starts[k + 1].startIdx - startIdx)
+        : hourly.length;
+    let executedOriginalCost = 0;
+    let executedOptimizedCost = 0;
+    let executedBatteryToHome = 0;
+    for (let i = 0; i < executedHours; i++) {
+      executedOriginalCost += hourly[i].consumptionKwh * hourly[i].fullPrice;
+      executedOptimizedCost += hourly[i].cost;
+      executedBatteryToHome += hourly[i].batteryToHome;
+    }
 
     let minPrice = Number.POSITIVE_INFINITY;
     let maxPrice = Number.NEGATIVE_INFINITY;
@@ -122,12 +150,21 @@ export function simulateYearSync(
       solarEstimatedTotal: summary.solarEstimatedTotal,
       solarEstimationError: summary.solarEstimatedTotal - summary.solarActualTotal,
       solarEstimationRmse: summary.solarEstimationRmse,
+      executedHours,
+      executedOriginalCost,
+      executedOptimizedCost,
+      executedSavings: executedOriginalCost - executedOptimizedCost,
+      executedBatteryToHome,
     });
   }
 
   const totalOriginalCost = days.reduce((s, d) => s + d.originalCost, 0);
   const totalOptimizedCost = days.reduce((s, d) => s + d.optimizedCost, 0);
   const totalSavings = totalOriginalCost - totalOptimizedCost;
+  const executedOriginalCost = days.reduce((s, d) => s + d.executedOriginalCost, 0);
+  const executedOptimizedCost = days.reduce((s, d) => s + d.executedOptimizedCost, 0);
+  const executedSavings = executedOriginalCost - executedOptimizedCost;
+  const executedDischarge = days.reduce((s, d) => s + d.executedBatteryToHome, 0);
 
   return {
     days,
@@ -136,5 +173,14 @@ export function simulateYearSync(
     totalSavings,
     savingsPct: totalOriginalCost > 0 ? (totalSavings / totalOriginalCost) * 100 : 0,
     totalCycles,
+    executedOriginalCost,
+    executedOptimizedCost,
+    executedSavings,
+    executedSavingsPct:
+      executedOriginalCost > 0 ? (executedSavings / executedOriginalCost) * 100 : 0,
+    executedCycles:
+      params.battery.usableCapacityKwh > 0
+        ? executedDischarge / params.battery.usableCapacityKwh
+        : 0,
   };
 }

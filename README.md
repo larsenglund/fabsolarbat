@@ -14,7 +14,7 @@ Built on the analysis work in [`larsenglund/notes/elpris batteri`](https://githu
 
 ## Status
 
-🏗️ **M1 shipped** — the simulation engine is ported to TypeScript (LP optimization on HiGHS WASM, hybrid solar forecasting, degradation, rolling day-ahead windows) and validated against the Python golden results: annual savings within 0.002%, worst per-day cost deviation ~1 öre, full-year run in ~1.5 s. Next: M2, the core UI.
+🏗️ **M1 shipped + audited** — the simulation engine is ported to TypeScript (LP optimization on HiGHS WASM, hybrid solar forecasting, degradation, rolling day-ahead windows) and validated against the Python golden results (annual savings within 0.002%, full-year run in ~1.5 s). A subsequent code review found accounting errors in the *original Python analysis* — overlapping planning windows double-counted savings ~2×, and payback had a +1-year off-by-one. Corrected headline for the reference dataset: **~3,967 SEK/yr savings (15.8%), payback ≈ 11–24 yr** depending on system cost — see docs/PRIOR_WORK.md § Corrections. Next: M2, the core UI.
 
 The full development plan lives in [`docs/`](docs/):
 

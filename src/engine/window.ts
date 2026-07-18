@@ -97,7 +97,10 @@ export function runWindow(highs: Highs, input: WindowRunInput): WindowRunResult 
         newSoc = actualSoc + charge - discharge;
       } else if (newSoc > bounds.maxSoc) {
         // Would overcharge — keep free solar, reduce grid charging first.
-        const maxCharge = (bounds.maxSoc - actualSoc + discharge) / eff;
+        // maxCharge can be slightly negative when carried SoC sits above the
+        // freshly-degraded ceiling; clamp at zero so flows never go negative
+        // (the Python original recorded a tiny negative solar flow here).
+        const maxCharge = Math.max(0, (bounds.maxSoc - actualSoc + discharge) / eff);
         if (s2b + g2b > maxCharge) {
           if (s2b <= maxCharge) {
             g2b = Math.max(0, maxCharge - s2b);
