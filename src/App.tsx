@@ -1,4 +1,5 @@
 import { Analysis } from "./components/Analysis";
+import { InfoPage } from "./components/InfoPage";
 import { Landing } from "./components/Landing";
 import { useAppStore } from "./store/appStore";
 
@@ -31,6 +32,13 @@ export function App() {
               {datasetMeta.label}
             </span>
           )}
+          <button
+            type="button"
+            onClick={() => useAppStore.getState().setView("about")}
+            className="text-sm text-text-muted transition-colors hover:text-text"
+          >
+            How it works
+          </button>
           <a
             href={REPO_URL}
             className="text-sm text-text-muted transition-colors hover:text-text"
@@ -42,7 +50,7 @@ export function App() {
         </div>
       </header>
 
-      {view === "landing" ? <Landing /> : <Analysis />}
+      {view === "landing" ? <Landing /> : view === "about" ? <InfoPage /> : <Analysis />}
 
       <footer className="mt-8 border-t border-border py-6 text-sm text-text-muted">
         Open source · no tracking · all computation happens client-side

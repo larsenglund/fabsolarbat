@@ -33,6 +33,22 @@ test("sample analysis runs end-to-end in the browser (wasm worker)", async ({ pa
 
   // Switching to sell-at-spot re-runs with export revenue priced in: the
   // battery is worth less (golden-pinned 3 016 kr/yr).
-  await page.getByLabel("Excess solar").selectOption("sell-at-spot");
+  await page.getByLabel("Excess solar", { exact: true }).selectOption("sell-at-spot");
   await expect(hero.getByText(/3\u00a0016\u00a0kr\/yr/)).toBeVisible({ timeout: 90_000 });
+});
+
+test("how-it-works page and parameter help", async ({ page }) => {
+  await page.goto("/");
+
+  // Info page from the header, and back.
+  await page.getByRole("button", { name: "How it works" }).click();
+  await expect(page.getByRole("heading", { name: "How the calculations work" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "How the optimizer thinks" })).toBeVisible();
+  await page.getByRole("button", { name: "\u2190 Back" }).click();
+  await expect(page.getByRole("heading", { level: 1 })).toContainText("home battery");
+
+  // Parameter help expands on the question mark.
+  await page.getByRole("button", { name: "Explore sample data" }).click();
+  await page.getByRole("button", { name: "Explain Usable capacity" }).click();
+  await expect(page.getByText(/spec sheets often quote/)).toBeVisible();
 });

@@ -1,3 +1,54 @@
+import { type ReactNode, useId, useState } from "react";
+
+export function HelpButton({
+  open,
+  onClick,
+  controls,
+  subject,
+}: {
+  open: boolean;
+  onClick: () => void;
+  controls: string;
+  subject: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-expanded={open}
+      aria-controls={controls}
+      aria-label={`Explain ${subject}`}
+      className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border text-[10px] leading-none transition-colors ${
+        open
+          ? "border-accent bg-accent text-white"
+          : "border-border text-text-muted hover:border-accent hover:text-accent"
+      }`}
+    >
+      ?
+    </button>
+  );
+}
+
+export function HelpText({
+  id,
+  open,
+  children,
+}: {
+  id: string;
+  open: boolean;
+  children: ReactNode;
+}) {
+  if (!open) return null;
+  return (
+    <p
+      id={id}
+      className="mt-1.5 rounded-md bg-surface-2 p-2 text-xs leading-relaxed text-text-muted"
+    >
+      {children}
+    </p>
+  );
+}
+
 export interface ParamFieldProps {
   label: string;
   unit?: string;
@@ -5,11 +56,12 @@ export interface ParamFieldProps {
   min: number;
   max: number;
   step: number;
-  hint?: string;
+  /** Detailed plain-language explanation, revealed by the ? button. */
+  help: string;
   onChange: (value: number) => void;
 }
 
-/** Slider paired with a numeric input, per DESIGN.md's parameter controls. */
+/** Slider paired with a numeric input and an expandable explanation. */
 export function ParamField({
   label,
   unit,
@@ -17,20 +69,29 @@ export function ParamField({
   min,
   max,
   step,
-  hint,
+  help,
   onChange,
 }: ParamFieldProps) {
-  const id = `param-${label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
+  const id = useId();
+  const [open, setOpen] = useState(false);
   const commit = (raw: string) => {
     const n = Number(raw);
     if (Number.isFinite(n)) onChange(Math.min(max, Math.max(min, n)));
   };
   return (
-    <div className="py-1.5" title={hint}>
+    <div className="py-1.5">
       <div className="flex items-baseline justify-between gap-2">
-        <label htmlFor={id} className="text-[13px] text-text-muted">
-          {label}
-        </label>
+        <span className="flex items-center gap-1.5">
+          <label htmlFor={id} className="text-[13px] text-text-muted">
+            {label}
+          </label>
+          <HelpButton
+            open={open}
+            onClick={() => setOpen(!open)}
+            controls={`${id}-help`}
+            subject={label}
+          />
+        </span>
         <span className="flex items-baseline gap-1">
           <input
             type="number"
@@ -55,6 +116,44 @@ export function ParamField({
         onChange={(e) => commit(e.target.value)}
         className="mt-1 w-full accent-accent"
       />
+      <HelpText id={`${id}-help`} open={open}>
+        {help}
+      </HelpText>
+    </div>
+  );
+}
+
+/** Label + help toggle wrapper for non-slider controls (selects). */
+export function LabeledField({
+  label,
+  htmlFor,
+  help,
+  children,
+}: {
+  label: string;
+  htmlFor: string;
+  help: string;
+  children: ReactNode;
+}) {
+  const id = useId();
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="py-1.5">
+      <div className="flex items-center gap-1.5">
+        <label htmlFor={htmlFor} className="text-[13px] text-text-muted">
+          {label}
+        </label>
+        <HelpButton
+          open={open}
+          onClick={() => setOpen(!open)}
+          controls={`${id}-help`}
+          subject={label}
+        />
+      </div>
+      {children}
+      <HelpText id={`${id}-help`} open={open}>
+        {help}
+      </HelpText>
     </div>
   );
 }

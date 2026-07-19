@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import type { MarketModel, SolarForecastMethod } from "../engine/types";
 import { useAppStore } from "../store/appStore";
-import { ParamField } from "./ParamField";
+import { LabeledField, ParamField } from "./ParamField";
 
 function Group({ title, children }: { title: string; children: ReactNode }) {
   return (
@@ -42,7 +42,7 @@ export function ParamSidebar() {
             min={1}
             max={30}
             step={0.1}
-            hint="Usable energy content, before degradation"
+            help="How much energy the battery can actually store and deliver, in kilowatt-hours. Note that spec sheets often quote the larger gross capacity — use the usable figure (for example, a '15.36 kWh' battery may offer 13.82 kWh usable). Bigger batteries can shift more energy per day but cost more, so this is the main size-vs-price trade-off."
             onChange={(v) => setParams({ battery: { usableCapacityKwh: v } })}
           />
           <ParamField
@@ -52,7 +52,7 @@ export function ParamSidebar() {
             min={0.5}
             max={15}
             step={0.1}
-            hint="Charge and discharge power limit"
+            help="The fastest rate at which the battery can charge or discharge. A high-capacity battery with low power can't empty itself during a short expensive evening peak, so power matters almost as much as capacity for price arbitrage."
             onChange={(v) => setParams({ battery: { maxPowerKw: v } })}
           />
           <ParamField
@@ -62,7 +62,7 @@ export function ParamSidebar() {
             min={80}
             max={99}
             step={0.5}
-            hint="AC efficiency applied on charge and again on discharge"
+            help="How much energy survives each conversion, applied once when charging and once when discharging. At 95% one-way, storing 1 kWh and using it later returns about 0.90 kWh (95% × 95%). This loss is why the battery only acts when the price gap is big enough to pay for it."
             onChange={(v) => setParams({ battery: { acEfficiency: v / 100 } })}
           />
           <ParamField
@@ -72,7 +72,7 @@ export function ParamSidebar() {
             min={50}
             max={100}
             step={1}
-            hint="90% means the battery never discharges below 10% state of charge"
+            help="How much of the capacity may be used before the battery stops discharging. 90% means it always keeps a 10% reserve — a common manufacturer setting that protects battery lifetime at the cost of a little usable energy."
             onChange={(v) => setParams({ battery: { depthOfDischargePercent: v } })}
           />
           <ParamField
@@ -82,7 +82,7 @@ export function ParamSidebar() {
             min={1000}
             max={15000}
             step={500}
-            hint="Full cycles until capacity reaches the end-of-life level"
+            help="How many full charge-discharge cycles the battery endures before reaching its end-of-life capacity (next parameter). The simulation counts every discharged kWh toward this budget, so a hard-working battery ages faster and saves slightly less each year."
             onChange={(v) => setParams({ battery: { cyclesToEol: v } })}
           />
           <ParamField
@@ -92,7 +92,7 @@ export function ParamSidebar() {
             min={50}
             max={90}
             step={1}
-            hint="Remaining capacity after the rated cycle life"
+            help="The share of original capacity remaining after the full cycle life — 70% is a typical warranty figure. Between new and end-of-life, capacity is assumed to fade linearly with use, which the long-term projections take into account."
             onChange={(v) => setParams({ battery: { eolCapacityPercent: v } })}
           />
         </Group>
@@ -105,7 +105,7 @@ export function ParamSidebar() {
             min={1}
             max={1.5}
             step={0.01}
-            hint="Multiplier on the spot price (1.25 = 25% VAT)"
+            help="Value-added tax applied to the electricity you buy, as a multiplier on the spot price. In Sweden this is 25%, so the default is 1.25. Set to 1.00 to analyze prices without tax."
             onChange={(v) => setParams({ tariff: { vatMultiplier: v } })}
           />
           <ParamField
@@ -115,7 +115,7 @@ export function ParamSidebar() {
             min={0}
             max={2}
             step={0.005}
-            hint="Överföringsavgift per purchased kWh, incl. VAT"
+            help="What your grid operator charges for delivering each kWh to your house, including tax — check your grid bill for the per-kWh transfer charge. It applies to every purchased kWh, which is why avoiding purchases (using stored solar) is worth more than the spot price alone suggests."
             onChange={(v) => setParams({ tariff: { transferFeeSekPerKwh: v } })}
           />
           <ParamField
@@ -125,16 +125,17 @@ export function ParamSidebar() {
             min={0}
             max={1}
             step={0.01}
-            hint="Påslag per kWh on top of spot"
+            help="Any fixed per-kWh surcharge your electricity retailer adds on top of the spot price on a variable-price contract. Often a few öre per kWh; monthly fixed fees don't belong here since the battery can't affect them."
             onChange={(v) => setParams({ tariff: { fixedMarkupSekPerKwh: v } })}
           />
         </Group>
 
         <Group title="Strategy">
-          <div className="py-1.5">
-            <label htmlFor="market-model" className="text-[13px] text-text-muted">
-              Excess solar
-            </label>
+          <LabeledField
+            label="Excess solar"
+            htmlFor="market-model"
+            help="What happens to solar power you don't use or store. 'Not sold' assumes exports earn nothing (the original analysis, a worst case that flatters the battery). 'Sold at spot + bonus' credits every exported kWh at the spot price plus the export bonus — in both the no-battery baseline and the battery scenario — so charging the battery from solar has a real cost: the sale you gave up."
+          >
             <select
               id="market-model"
               value={params.strategy.model}
@@ -144,7 +145,7 @@ export function ParamSidebar() {
               <option value="no-sell">Not sold (wasted) — original model</option>
               <option value="sell-at-spot">Sold at spot + bonus</option>
             </select>
-          </div>
+          </LabeledField>
           {params.strategy.model === "sell-at-spot" && (
             <ParamField
               label="Export bonus"
@@ -153,14 +154,15 @@ export function ParamSidebar() {
               min={0}
               max={0.5}
               step={0.005}
-              hint="Nätnytta and any retailer bonus on top of spot. Sweden's 60 öre skattereduktion is abolished and not included."
+              help="Extra compensation per exported kWh on top of the spot price: the grid-benefit payment from your grid operator and any bonus from your retailer, typically a few öre in total. Sweden's former 0.60 kr/kWh tax reduction for exported solar has been abolished and is deliberately not included."
               onChange={(v) => setParams({ tariff: { sellBonusSekPerKwh: v } })}
             />
           )}
-          <div className="py-1.5">
-            <label htmlFor="forecast" className="text-[13px] text-text-muted">
-              Solar forecast during planning
-            </label>
+          <LabeledField
+            label="Solar forecast during planning"
+            htmlFor="forecast"
+            help="Each day at 13:00 the optimizer plans ahead using known electricity prices — but future solar production must be estimated. 'Hybrid' scales the recent average by how sunny this morning actually was. 'Perfect' pretends tomorrow's solar is known exactly, which overstates what a real system can achieve; the other methods are simpler historical averages."
+          >
             <select
               id="forecast"
               value={params.strategy.solarForecast ?? "hybrid"}
@@ -175,7 +177,7 @@ export function ParamSidebar() {
                 </option>
               ))}
             </select>
-          </div>
+          </LabeledField>
           <ParamField
             label="Planning window"
             unit="h"
@@ -183,7 +185,7 @@ export function ParamSidebar() {
             min={24}
             max={47}
             step={1}
-            hint="Hours of known prices at each 13:00 planning point (35 = until midnight tomorrow)"
+            help="How many hours of known prices the optimizer plans over at each day's 13:00 planning point. Nord Pool publishes the next day's hourly prices around 13:00, so 35 hours (until midnight tomorrow) matches reality. Longer windows are what-if scenarios that assume prices further ahead were known."
             onChange={(v) => setParams({ strategy: { windowHours: v } })}
           />
         </Group>
@@ -196,7 +198,7 @@ export function ParamSidebar() {
             min={10000}
             max={150000}
             step={1000}
-            hint="Installed battery system price"
+            help="The full installed price of the battery system: hardware, installation, and any electrical work. Payback and return figures are extremely sensitive to this number, so get real quotes."
             onChange={(v) => setFinance({ systemCostSek: v })}
           />
           <ParamField
@@ -206,7 +208,7 @@ export function ParamSidebar() {
             min={5}
             max={25}
             step={1}
-            hint="Evaluation horizon for ROI and NPV"
+            help="How many years the investment is evaluated over. Batteries are often warrantied for about 10 years; a longer horizon favors the battery but assumes it keeps working."
             onChange={(v) => setFinance({ horizonYears: v })}
           />
           <ParamField
@@ -216,7 +218,7 @@ export function ParamSidebar() {
             min={0}
             max={10}
             step={0.5}
-            hint="For net present value of future savings"
+            help="Used for the net-present-value calculation: money saved years from now is worth less than money today. A rate around inflation or a safe interest rate is common; higher rates make future savings count for less."
             onChange={(v) => setFinance({ discountRate: v / 100 })}
           />
           <ParamField
@@ -226,7 +228,7 @@ export function ParamSidebar() {
             min={0}
             max={12}
             step={0.5}
-            hint="Expected annual return if the money went into e.g. an index fund"
+            help="What the same money could plausibly earn per year if invested elsewhere, for example a broad index fund. The comparison shows the opportunity cost of buying a battery instead of investing."
             onChange={(v) => setFinance({ alternativeReturnRate: v / 100 })}
           />
         </Group>

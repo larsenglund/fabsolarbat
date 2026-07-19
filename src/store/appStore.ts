@@ -10,7 +10,7 @@ import {
 import { startRun } from "../sim/simClient";
 
 export interface AppState {
-  view: "landing" | "analysis";
+  view: "landing" | "analysis" | "about";
   dataset: HourRecord[] | null;
   datasetMeta: DatasetMeta | null;
   params: EngineParams;
@@ -23,6 +23,7 @@ export interface AppState {
   /** Day index (into result.days) open in the drill-down, or null. */
   selectedDay: number | null;
 
+  setView: (view: AppState["view"]) => void;
   exploreSample: () => Promise<void>;
   setParams: (patch: DeepPartial<EngineParams>) => void;
   setFinance: (patch: Partial<FinanceParams>) => void;
@@ -68,6 +69,8 @@ export const useAppStore = create<AppState>((set, get) => {
     progress: null,
     error: null,
     selectedDay: null,
+
+    setView: (view) => set({ view }),
 
     exploreSample: async () => {
       set({ view: "analysis", error: null });
