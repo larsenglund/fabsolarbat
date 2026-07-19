@@ -10,6 +10,9 @@ const DAY_MS = 86_400_000;
 export interface SimulateOptions {
   params: EngineParams;
   initialSoc?: number;
+  /** Keep each day's full hourly schedule on DayResult (for drill-down UIs). */
+  retainHourly?: boolean;
+  /** Called after each simulated day completes. */
   onProgress?: (dayNumber: number, totalDays: number) => void;
 }
 
@@ -100,7 +103,6 @@ export function simulateYearSync(
 
   for (let k = 0; k < starts.length; k++) {
     const { time, startIdx, dayNumber } = starts[k];
-    options.onProgress?.(dayNumber, totalDays);
 
     const rows = hours.slice(startIdx, startIdx + windowHours);
     const usesEstimates = solarForecast !== null;
@@ -188,7 +190,9 @@ export function simulateYearSync(
       executedOptimizedCost,
       executedSavings: executedOriginalCost - executedOptimizedCost,
       executedBatteryToHome,
+      ...(options.retainHourly ? { hourly } : {}),
     });
+    options.onProgress?.(dayNumber, totalDays);
   }
 
   const totalOriginalCost = days.reduce((s, d) => s + d.originalCost, 0);

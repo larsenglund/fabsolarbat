@@ -14,7 +14,7 @@ Built on the analysis work in [`larsenglund/notes/elpris batteri`](https://githu
 
 ## Status
 
-🏗️ **M1 shipped + audited** — the simulation engine is ported to TypeScript (LP optimization on HiGHS WASM, hybrid solar forecasting, degradation, rolling day-ahead windows) and validated against the Python golden results (annual savings within 0.002%, full-year run in ~1.5 s). A subsequent code review found accounting errors in the *original Python analysis* — overlapping planning windows double-counted savings ~2×, and payback had a +1-year off-by-one. Corrected headline for the reference dataset: **~3,967 SEK/yr savings (15.8%), payback ≈ 11–24 yr** depending on system cost — see docs/PRIOR_WORK.md § Corrections. Next: M2, the core UI.
+🏗️ **M2 shipped** — the interactive analysis UI is live: the golden-validated engine runs in a Web Worker (HiGHS WASM, full 2024 year in ~3 s in-browser), driven by a parameter sidebar (battery, tariffs, strategy, economics) with debounced re-simulation. Results show executed-hours accounting throughout: hero stats (savings, payback, horizon net vs index fund), monthly savings, a degradation-aware projection chart, a zoomable full-year hourly explorer, and a per-day drill-down with the classic hourly dispatch table. Earlier: M1 ported and validated the engine, and a code review found the *original Python analysis* double-counted savings ~2× via overlapping planning windows — corrected headline for the reference dataset: **~3,967 SEK/yr (15.8%), payback ≈ 11–24 yr** (docs/PRIOR_WORK.md § Corrections). Next: M3, upload your own data.
 
 The full development plan lives in [`docs/`](docs/):
 

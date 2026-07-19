@@ -166,6 +166,11 @@ export interface DayResult {
   executedOptimizedCost: number;
   executedSavings: number;
   executedBatteryToHome: number;
+  /**
+   * Full-window hourly schedule (35 h incl. the re-planned tail), present only
+   * when SimulateOptions.retainHourly is set. Index < executedHours ⇒ executed.
+   */
+  hourly?: HourResult[];
 }
 
 export interface AnnualResult {
