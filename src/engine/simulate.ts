@@ -149,7 +149,7 @@ export function simulateYearSync(
     let executedOptimizedCost = 0;
     let executedBatteryToHome = 0;
     for (let i = 0; i < executedHours; i++) {
-      executedOriginalCost += hourly[i].consumptionKwh * hourly[i].fullPrice;
+      executedOriginalCost += hourly[i].baselineCost;
       executedOptimizedCost += hourly[i].cost;
       executedBatteryToHome += hourly[i].batteryToHome;
     }

@@ -47,9 +47,26 @@ export interface TariffParams {
   transferFeeSekPerKwh: number;
   /** Retailer markup in SEK/kWh (påslag), added like the transfer fee. */
   fixedMarkupSekPerKwh: number;
+  /**
+   * Added to the spot price for exported solar in the sell-at-spot model
+   * (nätnytta and any retailer bonus). Sweden's 60 öre/kWh skattereduktion
+   * has been abolished and is deliberately NOT part of the default.
+   */
+  sellBonusSekPerKwh: number;
 }
 
+/**
+ * Market model. "no-sell": excess solar not charged into the battery is
+ * wasted (no export revenue) — the original Python model. "sell-at-spot":
+ * exported solar earns spot + sellBonus, in the baseline AND with the
+ * battery, so diverting solar into the battery carries its real opportunity
+ * cost.
+ */
+export type MarketModel = "no-sell" | "sell-at-spot";
+
 export interface StrategyParams {
+  /** Market model for excess solar. */
+  model: MarketModel;
   /** Hour of day when day-ahead prices become known (13 in the Nordics). */
   planningHour: number;
   /** Planning window length in hours (35 = 13:00 → 24:00 next day). */
@@ -84,8 +101,10 @@ export const DEFAULT_PARAMS: EngineParams = {
     vatMultiplier: 1.25,
     transferFeeSekPerKwh: 0.685,
     fixedMarkupSekPerKwh: 0,
+    sellBonusSekPerKwh: 0.05,
   },
   strategy: {
+    model: "no-sell",
     planningHour: 13,
     windowHours: 35,
     solarForecast: "hybrid",
@@ -106,7 +125,12 @@ export interface HourResult {
   /** SoC in kWh after this hour's actions. */
   soc: number;
   gridConsumption: number;
+  /** Solar exported to grid this hour (excess minus battery charging). */
+  exportKwh: number;
+  /** Net cost with the battery: purchases minus export revenue. */
   cost: number;
+  /** Net cost without a battery: purchases minus full-export revenue. */
+  baselineCost: number;
 }
 
 export interface WindowSummary {

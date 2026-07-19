@@ -213,6 +213,7 @@ export function DayDrilldown() {
               <th className="px-2 font-normal">G→B</th>
               <th className="px-2 font-normal">B→H</th>
               <th className="px-2 font-normal">G→H</th>
+              <th className="px-2 font-normal">Exp</th>
               <th className="pl-2 font-normal">Cost</th>
             </tr>
           </thead>
@@ -231,6 +232,7 @@ export function DayDrilldown() {
                 <td className="px-2">{h.gridToBattery.toFixed(2)}</td>
                 <td className="px-2">{h.batteryToHome.toFixed(2)}</td>
                 <td className="px-2">{(h.consumptionKwh - h.batteryToHome).toFixed(2)}</td>
+                <td className="px-2">{h.exportKwh.toFixed(2)}</td>
                 <td className="pl-2">{h.cost.toFixed(2)}</td>
               </tr>
             ))}

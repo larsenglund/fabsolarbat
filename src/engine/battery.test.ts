@@ -37,6 +37,7 @@ describe("fullPricePerKwh", () => {
         vatMultiplier: 1.25,
         transferFeeSekPerKwh: 0.5,
         fixedMarkupSekPerKwh: 0.1,
+        sellBonusSekPerKwh: 0,
       }),
     ).toBeCloseTo(1.85, 12);
   });

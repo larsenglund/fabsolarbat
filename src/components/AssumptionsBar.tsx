@@ -4,10 +4,18 @@ import { useAppStore } from "../store/appStore";
 export function AssumptionsBar() {
   const meta = useAppStore((s) => s.datasetMeta);
   const forecast = useAppStore((s) => s.params.strategy.solarForecast);
+  const model = useAppStore((s) => s.params.strategy.model);
+  const sellBonus = useAppStore((s) => s.params.tariff.sellBonusSekPerKwh);
 
   return (
     <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-text-muted">
-      <span>No-sell model (excess solar earns nothing)</span>
+      {model === "sell-at-spot" ? (
+        <span title="Sweden's 60 öre/kWh skattereduktion is abolished and not included">
+          Sell-at-spot model (export earns spot + {(sellBonus * 100).toFixed(0)} öre/kWh)
+        </span>
+      ) : (
+        <span>No-sell model (excess solar earns nothing)</span>
+      )}
       <span aria-hidden>·</span>
       <span>{forecast ?? "perfect"} solar forecast</span>
       {meta && (

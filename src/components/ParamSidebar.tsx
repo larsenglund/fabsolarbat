@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import type { SolarForecastMethod } from "../engine/types";
+import type { MarketModel, SolarForecastMethod } from "../engine/types";
 import { useAppStore } from "../store/appStore";
 import { ParamField } from "./ParamField";
 
@@ -131,6 +131,32 @@ export function ParamSidebar() {
         </Group>
 
         <Group title="Strategy">
+          <div className="py-1.5">
+            <label htmlFor="market-model" className="text-[13px] text-text-muted">
+              Excess solar
+            </label>
+            <select
+              id="market-model"
+              value={params.strategy.model}
+              onChange={(e) => setParams({ strategy: { model: e.target.value as MarketModel } })}
+              className="mt-1 w-full rounded-md border border-border bg-surface px-2 py-1.5 text-[13px] focus:border-accent focus:outline-none"
+            >
+              <option value="no-sell">Not sold (wasted) — original model</option>
+              <option value="sell-at-spot">Sold at spot + bonus</option>
+            </select>
+          </div>
+          {params.strategy.model === "sell-at-spot" && (
+            <ParamField
+              label="Export bonus"
+              unit="kr/kWh"
+              value={t.sellBonusSekPerKwh}
+              min={0}
+              max={0.5}
+              step={0.005}
+              hint="Nätnytta and any retailer bonus on top of spot. Sweden's 60 öre skattereduktion is abolished and not included."
+              onChange={(v) => setParams({ tariff: { sellBonusSekPerKwh: v } })}
+            />
+          )}
           <div className="py-1.5">
             <label htmlFor="forecast" className="text-[13px] text-text-muted">
               Solar forecast during planning

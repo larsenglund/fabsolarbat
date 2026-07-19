@@ -41,7 +41,7 @@ fabsolarbat/
 ├── src/
 │   ├── engine/              # pure TS, no DOM — the simulation core
 │   │   ├── types.ts         # HourRecord, ScenarioParams, DayResult, AnnualResult…
-│   │   ├── costModel.ts     # VAT, transfer fee, markup (sell-price models: v2)
+│   │   ├── costModel.ts     # VAT, transfer fee, markup; sell price = spot + bonus
 │   │   ├── battery.ts       # SoC bounds, degradation, power limits
 │   │   ├── lp.ts            # LP problem builder for one 35 h window (HiGHS)
 │   │   ├── solarForecast.ts # perfect / simple / weighted / hybrid / persistence
@@ -97,10 +97,11 @@ interface ScenarioParams {
     vatMultiplier: number;          // default 1.25 (applied to spot)
     transferFeeSekPerKwh: number;   // default 0.685 (incl. VAT)
     fixedMarkupSekPerKwh: number;   // default 0 (retailer påslag)
+    sellBonusSekPerKwh: number;     // default 0.05 (natnytta; 60 ore skattereduktion abolished)
     // v2: time-of-use transfer fees, effekttariff (peak-power fee per month)
   };
   strategy: {
-    model: 'no-sell';                    // v2: 'sell-at-spot' with export valuation (see PLAN.md)
+    model: 'no-sell' | 'sell-at-spot';   // sell: export earns spot + sellBonus (skattereduktion abolished)
     planningHour: number;                 // default 13 (day-ahead publication)
     windowHours: number;                  // default 35
     solarForecast: 'perfect' | 'simple' | 'weighted' | 'hybrid' | 'persistence';
@@ -119,7 +120,7 @@ interface ScenarioParams {
 
 Variables per hour `t`: `s2b[t]`, `g2b[t]`, `b2h[t]` ≥ 0; `soc[t]` ∈ [effCap·(1−DoD%), effCap·maxCharge%] with effCap = capacity·capFactor (degradation).
 
-Objective: minimize Σ `(g2h[t] + g2b[t]) · fullPrice[t]` (a v2 sell model would subtract Σ `export[t] · sellPrice[t]`), where `g2h[t] = consumption[t] − b2h[t]` and `fullPrice = spot·VAT + transfer + markup`.
+Objective: minimize Σ `(g2h[t] + g2b[t]) · fullPrice[t]` − Σ `export[t] · sellPrice[t]` (sell-at-spot model; sellPrice ≡ 0 in no-sell), where `g2h[t] = consumption[t] − b2h[t]` and `fullPrice = spot·VAT + transfer + markup`.
 
 Constraints (per hour):
 

@@ -36,6 +36,12 @@ export function runWindow(highs: Highs, input: WindowRunInput): WindowRunResult 
   const eff = battery.acEfficiency;
   const bounds = socBounds(input.cyclesCompleted, battery);
   const fullPrice = rows.map((r) => fullPricePerKwh(r.priceSekPerKwh, params.tariff));
+  // Export price: spot + bonus in the sell model, identically 0 in no-sell —
+  // which reduces every formula below to the golden-validated original.
+  const sellPrice =
+    strategy.model === "sell-at-spot"
+      ? rows.map((r) => r.priceSekPerKwh + params.tariff.sellBonusSekPerKwh)
+      : rows.map(() => 0);
 
   // Degradation shrinks the ceiling a little every day; SoC carried from
   // yesterday can sit above today's maxSoc with no consumption to discharge
@@ -44,6 +50,7 @@ export function runWindow(highs: Highs, input: WindowRunInput): WindowRunResult 
   // the executed SoC to the true bounds.
   const plan = solveWindow(highs, {
     fullPrice,
+    sellPrice,
     consumptionKwh: rows.map((r) => r.consumptionKwh),
     planningSolarKwh: input.planningSolarKwh,
     initialSoc,
@@ -74,12 +81,15 @@ export function runWindow(highs: Highs, input: WindowRunInput): WindowRunResult 
     let soc: number;
 
     if (usesEstimates) {
-      // Solar charging: bounded by what actually exists; bonus-charge extra
-      // solar into any unused charge capacity.
+      // Solar charging: bounded by what actually exists. In the no-sell
+      // model, extra unexpected solar is bonus-charged into unused charge
+      // capacity (it would otherwise be wasted). In the sell model that rule
+      // would grab sellable energy against the plan's economics — surplus is
+      // exported instead.
       const s2bPlanned = s2b;
       const g2bPlanned = g2b;
       s2b = Math.min(s2bPlanned, actualSolar);
-      if (actualSolar > s2bPlanned) {
+      if (strategy.model === "no-sell" && actualSolar > s2bPlanned) {
         const capacityUsed = s2bPlanned + g2bPlanned;
         const extra = Math.min(battery.maxPowerKw - capacityUsed, actualSolar - s2bPlanned);
         s2b = s2bPlanned + Math.max(0, extra);
@@ -131,12 +141,17 @@ export function runWindow(highs: Highs, input: WindowRunInput): WindowRunResult 
     }
 
     const gridConsumption = row.consumptionKwh - b2h + g2b;
-    const cost = fullPrice[t] * gridConsumption;
+    // Solar not charged into the battery is exported (sell model) or wasted
+    // (no-sell); s2b never exceeds the actual solar in either path.
+    const exportKwh = Math.max(0, actualSolar - s2b);
+    const cost = fullPrice[t] * gridConsumption - sellPrice[t] * exportKwh;
+    // Without a battery, ALL excess solar would have been exported.
+    const baselineCost = row.consumptionKwh * fullPrice[t] - sellPrice[t] * actualSolar;
 
     sumS2b += s2b;
     sumG2b += g2b;
     sumB2h += b2h;
-    originalCost += row.consumptionKwh * fullPrice[t];
+    originalCost += baselineCost;
     optimizedCost += cost;
 
     hourly.push({
@@ -150,7 +165,9 @@ export function runWindow(highs: Highs, input: WindowRunInput): WindowRunResult 
       batteryToHome: b2h,
       soc,
       gridConsumption,
+      exportKwh,
       cost,
+      baselineCost,
     });
   }
 

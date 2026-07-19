@@ -116,6 +116,43 @@ describe("engine invariants on seeded synthetic data", () => {
     expect(executedHourSum).toBe(expectedHours);
   });
 
+  it("sell-at-spot: no battery ⇒ no savings, and diverting solar carries its opportunity cost", async () => {
+    const hours = syntheticHours(7, 11);
+    const sellParams: EngineParams = {
+      ...DEFAULT_PARAMS,
+      strategy: { ...DEFAULT_PARAMS.strategy, model: "sell-at-spot" },
+    };
+
+    // With no battery at all, baseline and optimized both sell everything —
+    // net savings must be zero even though both sides include revenue.
+    const none = await simulateYear(hours, {
+      params: {
+        ...sellParams,
+        battery: { ...sellParams.battery, usableCapacityKwh: 0, maxPowerKw: 0 },
+      },
+    });
+    for (const d of none.days) {
+      expect(d.executedSavings).toBeCloseTo(0, 9);
+      expect(d.savings).toBeCloseTo(0, 9);
+    }
+
+    // Selling reduces the battery's incremental value vs the no-sell model.
+    const noSell = await simulateYear(hours, { params: DEFAULT_PARAMS });
+    const sell = await simulateYear(hours, { params: sellParams });
+    expect(sell.executedSavings).toBeLessThan(noSell.executedSavings + 1e-6);
+
+    // With an absurd export bonus, selling always beats storing: the
+    // optimizer should stop charging from solar (grid charging may remain).
+    const bonanza = await simulateYear(hours, {
+      params: {
+        ...sellParams,
+        tariff: { ...sellParams.tariff, sellBonusSekPerKwh: 50 },
+      },
+    });
+    const totalS2b = bonanza.days.reduce((s, d) => s + d.solarToBattery, 0);
+    expect(totalS2b).toBeLessThan(0.01);
+  });
+
   it("rejects infeasible parameter combinations with readable errors", async () => {
     const hours = syntheticHours(3, 5);
     const b = DEFAULT_PARAMS.battery;

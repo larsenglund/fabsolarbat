@@ -200,3 +200,24 @@ describe("golden-file validation against the Python LP analysis", () => {
     expect(Math.abs(result.executedCycles - 336.5) / 336.5).toBeLessThan(0.01);
   });
 });
+
+describe("sell-at-spot market model on the 2024 dataset", () => {
+  it("prices the opportunity cost of diverted solar", { timeout: 600_000 }, async () => {
+    const hours = parseMergedCsv(
+      readFileSync(join(process.cwd(), "data", "merged_hourly_data.csv"), "utf8"),
+    );
+    const result = await simulateYear(hours, {
+      params: {
+        ...DEFAULT_PARAMS,
+        strategy: { ...DEFAULT_PARAMS.strategy, model: "sell-at-spot" },
+      },
+    });
+    // Pinned headline (5 ore/kWh default export bonus, skattereduktion
+    // abolished): must track the app copy if it ever shifts.
+    expect(Math.abs(result.executedSavings - 3016) / 3016).toBeLessThan(0.01);
+    // Selling makes the BASELINE cheaper and the battery less valuable than
+    // in the no-sell model (3 967 SEK/yr).
+    expect(result.executedSavings).toBeLessThan(3967);
+    expect(result.executedOriginalCost).toBeLessThan(25164);
+  });
+});

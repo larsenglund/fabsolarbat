@@ -10,18 +10,23 @@ import type { Highs } from "./solver";
  *   soc_t  state of charge after hour t (kWh), bounded [minSoc, maxSoc]
  *
  * minimize   Σ fullPrice_t · (consumption_t − b2h_t + g2b_t) + penalty · g2b_t
+ *            − Σ sellPrice_t · (solar_t − s2b_t)     (sell-at-spot model)
  * subject to soc_t = soc_{t−1} + η·(s2b_t + g2b_t) − b2h_t/η
  *            s2b_t ≤ solar_t          (planning solar, possibly estimated)
  *            s2b_t + g2b_t ≤ maxPower
  *            b2h_t ≤ maxPower
  *            b2h_t ≤ consumption_t
  *
- * The constant Σ fullPrice_t · consumption_t is dropped from the LP objective
- * (costs are recomputed in the accounting pass), leaving
- * Σ (fullPrice_t + penalty)·g2b_t − fullPrice_t·b2h_t.
+ * Constants (Σ fullPrice·consumption, Σ sellPrice·solar) are dropped from the
+ * LP objective (costs are recomputed in the accounting pass), leaving
+ * Σ (fullPrice_t + penalty)·g2b_t − fullPrice_t·b2h_t + sellPrice_t·s2b_t.
+ * The sellPrice·s2b term is the opportunity cost of diverting sellable solar
+ * into the battery; with sellPrice ≡ 0 (no-sell) the LP is unchanged.
  */
 export interface LpWindowInput {
   fullPrice: number[];
+  /** Export price per hour (0 for the no-sell model). */
+  sellPrice: number[];
   consumptionKwh: number[];
   planningSolarKwh: number[];
   initialSoc: number;
@@ -55,6 +60,9 @@ export function buildLpText(input: LpWindowInput): string {
     const price = input.fullPrice[t];
     obj.push(term(price + input.gridChargePenalty, `g2b_${t}`));
     obj.push(term(-price, `b2h_${t}`));
+    // Emitted only when nonzero so the no-sell LP text is byte-identical to
+    // the golden-validated formulation.
+    if (input.sellPrice[t] !== 0) obj.push(term(input.sellPrice[t], `s2b_${t}`));
 
     const prev = t === 0 ? f(input.initialSoc) : "";
     if (t === 0) {

@@ -30,4 +30,9 @@ test("sample analysis runs end-to-end in the browser (wasm worker)", async ({ pa
   await expect(page.getByRole("region", { name: "Day detail" })).toBeVisible();
   // 13:00 appears twice — the 35 h window spans two calendar days.
   await expect(page.getByRole("cell", { name: "13:00" }).first()).toBeVisible();
+
+  // Switching to sell-at-spot re-runs with export revenue priced in: the
+  // battery is worth less (golden-pinned 3 016 kr/yr).
+  await page.getByLabel("Excess solar").selectOption("sell-at-spot");
+  await expect(hero.getByText(/3\u00a0016\u00a0kr\/yr/)).toBeVisible({ timeout: 90_000 });
 });
