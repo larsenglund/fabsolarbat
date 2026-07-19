@@ -29,7 +29,7 @@ export interface AppState {
   setView: (view: AppState["view"]) => void;
   initPersisted: () => Promise<void>;
   exploreSample: () => Promise<void>;
-  useUploadedDataset: (hours: HourRecord[], meta: DatasetMeta) => void;
+  applyUploadedDataset: (hours: HourRecord[], meta: DatasetMeta) => void;
   continuePersisted: () => void;
   clearUserData: () => Promise<void>;
   setParams: (patch: DeepPartial<EngineParams>) => void;
@@ -97,7 +97,7 @@ export const useAppStore = create<AppState>((set, get) => {
       }
     },
 
-    useUploadedDataset: (hours, meta) => {
+    applyUploadedDataset: (hours, meta) => {
       set({
         dataset: hours,
         datasetMeta: meta,

@@ -74,7 +74,7 @@ test("upload: merged file reproduces the sample results exactly", async ({ page 
 test("upload: separate energy + price fixtures merge and analyze", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("button", { name: "Upload your data" }).click();
-  await page.getByRole("radio", { name: "Separate energy + price files" }).click();
+  await page.getByRole("button", { name: "Separate energy + price files" }).click();
 
   await page.locator("#energy-file").setInputFiles("data/hourly_production_and_consumption.csv");
   await page.locator("#price-file").setInputFiles("data/hourly_power_price.csv");

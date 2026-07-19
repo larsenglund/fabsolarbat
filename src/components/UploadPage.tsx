@@ -116,7 +116,7 @@ function metaFor(hours: HourRecord[], report: MergeReport): DatasetMeta {
 
 export function UploadPage() {
   const setView = useAppStore((s) => s.setView);
-  const useUploadedDataset = useAppStore((s) => s.useUploadedDataset);
+  const applyUploadedDataset = useAppStore((s) => s.applyUploadedDataset);
   const persisted = useAppStore((s) => s.persisted);
   const continuePersisted = useAppStore((s) => s.continuePersisted);
   const clearUserData = useAppStore((s) => s.clearUserData);
@@ -231,7 +231,7 @@ export function UploadPage() {
         </div>
       )}
 
-      <div className="mt-8 flex gap-2" role="radiogroup" aria-label="Upload mode">
+      <div className="mt-8 flex gap-2">
         <ModeButton active={mode === "merged"} onClick={() => setMode("merged")}>
           One merged file (recommended)
         </ModeButton>
@@ -258,7 +258,7 @@ export function UploadPage() {
             <ReportPanel parsed={parsed} error={error} />
             <UseButton
               parsed={parsed}
-              onUse={(p) => useUploadedDataset(p.hours, metaFor(p.hours, p.report))}
+              onUse={(p) => applyUploadedDataset(p.hours, metaFor(p.hours, p.report))}
             />
           </div>
         </div>
@@ -379,7 +379,7 @@ export function UploadPage() {
             <ReportPanel parsed={parsed} error={error} />
             <UseButton
               parsed={parsed}
-              onUse={(p) => useUploadedDataset(p.hours, metaFor(p.hours, p.report))}
+              onUse={(p) => applyUploadedDataset(p.hours, metaFor(p.hours, p.report))}
             />
           </div>
         </div>
@@ -402,8 +402,7 @@ function ModeButton({
   return (
     <button
       type="button"
-      role="radio"
-      aria-checked={active}
+      aria-pressed={active}
       onClick={onClick}
       className={`rounded-lg border px-4 py-2 text-sm font-medium transition-colors ${
         active ? "border-accent bg-accent text-white" : "border-border bg-surface text-text-muted"
@@ -458,7 +457,7 @@ function ReportPanel({ parsed, error }: { parsed: Parsed | null; error: string |
   if (!parsed) return null;
   const r = parsed.report;
   return (
-    <div
+    <section
       className="rounded-xl border border-border bg-surface p-4 text-sm"
       aria-label="Validation report"
     >
@@ -490,7 +489,7 @@ function ReportPanel({ parsed, error }: { parsed: Parsed | null; error: string |
           ))}
         </ul>
       )}
-    </div>
+    </section>
   );
 }
 
