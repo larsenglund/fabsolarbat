@@ -15,7 +15,7 @@ The what/when/how of building, testing and deploying the Home Battery Profitabil
 ### v1 (launch)
 
 - Built-in 2024 SE3 sample dataset, loads instantly on “Explore sample data”
-- Upload own data: canonical CSV, grid-operator export (Swedish locale), ENTSO-E prices + FX, generic column-mapping wizard; validation report; IndexedDB persistence
+- Upload own data: canonical CSV, grid-operator export (Swedish locale), ENTSO-E prices + FX (fixed or daily rates, optional UTC shift); explicit format examples + downloadable templates; validation report; IndexedDB persistence with a remove control
 - Full parameter panel (battery, tariffs, strategy, economics — see `ScenarioParams` in ARCHITECTURE.md)
 - Simulation: LP-optimal rolling 35 h day-ahead strategy (HiGHS wasm in a worker); no-sell AND sell-at-spot market models (export earns spot + bonus; Sweden's abolished 60 öre skattereduktion deliberately excluded); 5 solar-forecast modes; degradation; executed-hours accounting for honest annual figures
 - Results: hero stats (savings, payback, ROI/NPV vs index fund), monthly breakdown, 10-year degradation-aware projection, hourly explorer, day drill-down with flows/SoC/table
@@ -29,6 +29,7 @@ The what/when/how of building, testing and deploying the Home Battery Profitabil
 - Battery-size / system-cost sensitivity sweeps (heatmap: capacity × cost → payback)
 - Consumption forecasting (today: perfect within window), EV charging profiles
 - Live spot prices (elprisetjustnu.se API) for “what would the battery do tomorrow?”
+- Generic column-mapping wizard for arbitrary CSV layouts (v1 ships auto-detection + explicit format examples instead)
 - Multi-scenario tabs (more than A/B side-by-side)
 - Localization (sv/en toggle; v1 is English with Swedish domain terms)
 
@@ -46,8 +47,8 @@ Port the model: parser for the canonical CSV, cost model, battery model, LP wind
 ### M2 — Core UI & drill-down
 App shell, theming, parameter sidebar wired to worker, hero stats, cost/projection/monthly charts, assumptions bar, progress streaming, memoized results, hourly explorer (uPlot), day drill-down (flows + SoC + hourly table, prev/next, best/worst day shortcuts). Sample-data-only. **Exit:** full run < 5 s with responsive UI; day view matches Python `--day` output for 3 spot-checked days; Playwright happy path.
 
-### M3 — Own data
-Upload wizard (3 steps), all three concrete parsers + generic mapping, validation/repair report, unit heuristics, FX handling, local persistence + “remove my data”, short-dataset extrapolation labeling. **Exit:** fixtures `hourly_production_and_consumption.csv` and `hourly_power_price.csv` import end-to-end via the wizard in Playwright; malformed-file test matrix passes.
+### M3 — Own data ✅
+Upload page with explicit format contracts (example rows + downloadable templates per file type), the three concrete parsers (canonical merged CSV; Swedish grid-operator export with semicolons/decimal commas/BOM; ENTSO-E prices with EUR-MWh/SEK-kWh/öre units, fixed-or-daily FX, optional UTC→Swedish shift), merge with a validation report, local persistence (idb-keyval) + “remove my data”, short-dataset annualization labeling. The speculative generic column-mapping wizard was descoped in favor of auto-detection plus visible format examples — moved to v2. **Exit met:** the real fixtures import end-to-end in Playwright (the merged fixture reproduces the golden 3 967 kr/yr exactly); parser fixture + malformed tests pass.
 
 ### M4 — Sharing & polish
 Baseline pin (A/B compare), URL state, empty states, keyboard/a11y pass, manual performance audit against the budgets, copy pass, README/user docs. **Exit:** launch checklist below.

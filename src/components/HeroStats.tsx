@@ -32,15 +32,30 @@ export function HeroStats() {
   const finance = useAppStore((s) => s.finance);
   const battery = useAppStore((s) => s.params.battery);
 
+  // Datasets shorter than a year are annualized for the yearly figures and
+  // the finance math — clearly labeled, since seasons may be unbalanced.
+  const scaled = useMemo(() => {
+    if (!result) return null;
+    const executedHours = result.days.reduce((s, d) => s + d.executedHours, 0);
+    const partial = executedHours < 8000;
+    const factor = partial ? 8760 / executedHours : 1;
+    return {
+      partial,
+      days: Math.round(executedHours / 24),
+      annualSavings: result.executedSavings * factor,
+      annualCycles: result.executedCycles * factor,
+    };
+  }, [result]);
+
   const analysis = useMemo(
     () =>
-      result
-        ? analyzeInvestment(result.executedSavings, result.executedCycles, battery, finance)
+      scaled
+        ? analyzeInvestment(scaled.annualSavings, scaled.annualCycles, battery, finance)
         : null,
-    [result, battery, finance],
+    [scaled, battery, finance],
   );
 
-  if (!result || !analysis) return null;
+  if (!result || !analysis || !scaled) return null;
 
   const net = analysis.horizonSavings - finance.systemCostSek;
   const paybackTone =
@@ -54,10 +69,14 @@ export function HeroStats() {
     <section aria-label="Headline results">
       <div className="grid grid-cols-1 gap-px overflow-hidden rounded-xl border border-border bg-border sm:grid-cols-3">
         <Tile
-          label="Annual savings"
-          value={`${formatSek(result.executedSavings)}/yr`}
-          sub={`${formatPercent(result.executedSavingsPct)} of the no-battery cost`}
-          tone={result.executedSavings > 0 ? "positive" : "negative"}
+          label={scaled.partial ? "Annual savings (annualized)" : "Annual savings"}
+          value={`${formatSek(scaled.annualSavings)}/yr`}
+          sub={
+            scaled.partial
+              ? `extrapolated from ${scaled.days} days of data`
+              : `${formatPercent(result.executedSavingsPct)} of the no-battery cost`
+          }
+          tone={scaled.annualSavings > 0 ? "positive" : "negative"}
         />
         <Tile
           label="Payback"
@@ -76,10 +95,11 @@ export function HeroStats() {
       </div>
       <p className="mt-2 text-xs leading-relaxed text-text-muted">
         These figures are the battery's <em>added</em> value: the same household would pay{" "}
-        {formatSek(result.executedOriginalCost)}/yr without a battery and{" "}
-        {formatSek(result.executedOptimizedCost)}/yr with one, under the current market model.
-        Changing the model (e.g. selling solar) moves both bills — the tiles show only their
-        difference, which is what the battery investment buys.
+        {formatSek(result.executedOriginalCost)}
+        {scaled.partial ? ` over the ${scaled.days} analyzed days` : "/yr"} without a battery and{" "}
+        {formatSek(result.executedOptimizedCost)} with one, under the current market model. Changing
+        the model (e.g. selling solar) moves both bills — the tiles show only their difference,
+        which is what the battery investment buys.
       </p>
     </section>
   );

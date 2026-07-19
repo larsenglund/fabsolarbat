@@ -6,6 +6,7 @@ import { parseMergedCsv } from "./parsers/mergedCsv";
 
 export interface DatasetMeta {
   label: string;
+  source: "sample" | "user";
   hours: number;
   firstDay: string;
   lastDay: string;
@@ -20,6 +21,7 @@ export async function loadSampleDataset(): Promise<{ hours: HourRecord[]; meta: 
     hours,
     meta: {
       label: "2024 sample · SE3",
+      source: "sample",
       hours: hours.length,
       firstDay: fmt(hours[0].t),
       lastDay: fmt(hours[hours.length - 1].t),

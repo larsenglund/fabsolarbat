@@ -1,6 +1,8 @@
+import { useEffect } from "react";
 import { Analysis } from "./components/Analysis";
 import { InfoPage } from "./components/InfoPage";
 import { Landing } from "./components/Landing";
+import { UploadPage } from "./components/UploadPage";
 import { useAppStore } from "./store/appStore";
 
 const REPO_URL = "https://github.com/larsenglund/fabsolarbat";
@@ -9,6 +11,10 @@ export function App() {
   const view = useAppStore((s) => s.view);
   const progress = useAppStore((s) => s.progress);
   const datasetMeta = useAppStore((s) => s.datasetMeta);
+
+  useEffect(() => {
+    void useAppStore.getState().initPersisted();
+  }, []);
 
   return (
     <div className="mx-auto flex min-h-dvh max-w-[1320px] flex-col px-6">
@@ -50,7 +56,15 @@ export function App() {
         </div>
       </header>
 
-      {view === "landing" ? <Landing /> : view === "about" ? <InfoPage /> : <Analysis />}
+      {view === "landing" ? (
+        <Landing />
+      ) : view === "about" ? (
+        <InfoPage />
+      ) : view === "upload" ? (
+        <UploadPage />
+      ) : (
+        <Analysis />
+      )}
 
       <footer className="mt-8 border-t border-border py-6 text-sm text-text-muted">
         Open source · no tracking · all computation happens client-side

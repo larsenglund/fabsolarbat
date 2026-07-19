@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { loadDataset, type PersistedDataset, removeDataset, saveDataset } from "../data/persist";
 import { type DatasetMeta, loadSampleDataset } from "../data/sample";
 import { DEFAULT_FINANCE, type FinanceParams } from "../engine/finance";
 import {
@@ -10,7 +11,7 @@ import {
 import { startRun } from "../sim/simClient";
 
 export interface AppState {
-  view: "landing" | "analysis" | "about";
+  view: "landing" | "analysis" | "about" | "upload";
   dataset: HourRecord[] | null;
   datasetMeta: DatasetMeta | null;
   params: EngineParams;
@@ -22,9 +23,15 @@ export interface AppState {
   error: string | null;
   /** Day index (into result.days) open in the drill-down, or null. */
   selectedDay: number | null;
+  /** Previously uploaded dataset restored from IndexedDB, if any. */
+  persisted: PersistedDataset | null;
 
   setView: (view: AppState["view"]) => void;
+  initPersisted: () => Promise<void>;
   exploreSample: () => Promise<void>;
+  useUploadedDataset: (hours: HourRecord[], meta: DatasetMeta) => void;
+  continuePersisted: () => void;
+  clearUserData: () => Promise<void>;
   setParams: (patch: DeepPartial<EngineParams>) => void;
   setFinance: (patch: Partial<FinanceParams>) => void;
   resetParams: () => void;
@@ -69,18 +76,62 @@ export const useAppStore = create<AppState>((set, get) => {
     progress: null,
     error: null,
     selectedDay: null,
+    persisted: null,
 
     setView: (view) => set({ view }),
 
+    initPersisted: async () => {
+      const d = await loadDataset();
+      if (d) set({ persisted: d });
+    },
+
     exploreSample: async () => {
       set({ view: "analysis", error: null });
-      if (get().dataset) return;
+      if (get().datasetMeta?.source === "sample") return;
       try {
         const { hours, meta } = await loadSampleDataset();
-        set({ dataset: hours, datasetMeta: meta });
+        set({ dataset: hours, datasetMeta: meta, result: null, selectedDay: null });
         scheduleRun();
       } catch (err) {
         set({ error: err instanceof Error ? err.message : String(err) });
+      }
+    },
+
+    useUploadedDataset: (hours, meta) => {
+      set({
+        dataset: hours,
+        datasetMeta: meta,
+        view: "analysis",
+        error: null,
+        result: null,
+        selectedDay: null,
+      });
+      const persisted: PersistedDataset = { hours, meta, savedAt: Date.now() };
+      set({ persisted });
+      void saveDataset(persisted);
+      scheduleRun();
+    },
+
+    continuePersisted: () => {
+      const d = get().persisted;
+      if (!d) return;
+      set({
+        dataset: d.hours,
+        datasetMeta: d.meta,
+        view: "analysis",
+        error: null,
+        result: null,
+        selectedDay: null,
+      });
+      scheduleRun();
+    },
+
+    clearUserData: async () => {
+      await removeDataset();
+      const wasUserData = get().datasetMeta?.source === "user";
+      set({ persisted: null });
+      if (wasUserData) {
+        set({ dataset: null, datasetMeta: null, result: null, view: "landing" });
       }
     },
 

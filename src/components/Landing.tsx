@@ -16,6 +16,9 @@ const REFERENCE = {
 
 export function Landing() {
   const exploreSample = useAppStore((s) => s.exploreSample);
+  const setView = useAppStore((s) => s.setView);
+  const persisted = useAppStore((s) => s.persisted);
+  const continuePersisted = useAppStore((s) => s.continuePersisted);
 
   return (
     <main className="flex flex-1 flex-col justify-center gap-10 py-16">
@@ -40,12 +43,21 @@ export function Landing() {
         </button>
         <button
           type="button"
-          disabled
-          title="Coming with the upload wizard (milestone M3)"
-          className="rounded-lg border border-border bg-surface px-5 py-2.5 font-medium opacity-50"
+          onClick={() => setView("upload")}
+          className="rounded-lg border border-border bg-surface px-5 py-2.5 font-medium transition-colors hover:border-accent"
         >
           Upload your data
         </button>
+        {persisted && (
+          <button
+            type="button"
+            onClick={continuePersisted}
+            className="rounded-lg border border-border bg-surface px-5 py-2.5 font-medium transition-colors hover:border-accent"
+          >
+            Continue with your data ({persisted.meta.firstDay.slice(0, 4)},{" "}
+            {Math.round(persisted.meta.hours / 24)} days)
+          </button>
+        )}
       </div>
 
       <section aria-label="Reference analysis results" className="max-w-2xl">

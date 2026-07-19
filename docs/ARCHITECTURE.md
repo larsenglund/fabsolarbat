@@ -19,13 +19,13 @@ The whole simulation — data parsing, LP optimization, statistics — runs in t
 | Language | **TypeScript** (strict) | The engine is numeric and fiddly; types catch unit errors (kWh vs kW vs SEK) |
 | UI framework | **React 19** | Ecosystem, familiarity, fine for a dashboard SPA |
 | Styling | **Tailwind CSS v4** + design tokens from [DESIGN.md](DESIGN.md) | Fast iteration, consistent system, trivial dark mode |
-| State | **Zustand** (M2) | Small, no boilerplate; one store for dataset, one for scenario params, one for results |
+| State | **Zustand** | Small, no boilerplate; one store for dataset, one for scenario params, one for results |
 | LP solver | **`highs` (HiGHS → WASM)** | Same problem class the Python CBC solver handled; state-of-the-art, MIT-licensed, wasm loaded lazily inside the worker. (Pure-JS solvers like jsLPSolver were considered — no wasm asset to serve — but are unmaintained and numerically weaker; parity with the Python LP is the whole point.) |
 | Simulation host | **Web Worker**, plain typed `postMessage` | Keeps 365 LP solves off the main thread. One worker, two message types (run, progress) — no RPC library needed |
-| CSV parsing | **Papa Parse** (M3 upload wizard) | Streaming, handles quoting/BOM; we add locale sniffing (`;` + decimal comma) on top. The canonical merged-CSV parser (src/data/parsers/mergedCsv.ts) is a small hand-rolled fixed-format parser and stays that way |
-| Charts | **uPlot** (M2) for time series (hourly explorer, projections); aggregate charts (12 monthly bars, day-flow stacks) as small hand-rolled SVG components | One tiny (~45 kB) chart dependency that renders 8,760 points at 60 fps; a 12-bar chart doesn't need a library |
+| CSV parsing | hand-rolled per-format parsers (src/data/parsers/) | The accepted formats are explicit and shown to the user with examples, so a small quotes/delimiter/locale-aware splitter beats a generic CSV library; Papa Parse deferred until a generic mapping wizard (v2) needs it |
+| Charts | **uPlot** for time series (hourly explorer, projections); aggregate charts (12 monthly bars, day-flow stacks) as small hand-rolled SVG components | One tiny (~45 kB) chart dependency that renders 8,760 points at 60 fps; a 12-bar chart doesn't need a library |
 | Dates | none — small fixed-format timestamp parser | Input formats are known and timestamps are naive local hours; DST duplicates/gaps are detected in validation, not resolved by a tz library |
-| Persistence | **idb-keyval** (M3) | Two-function IndexedDB wrapper for caching the parsed dataset locally |
+| Persistence | **idb-keyval** | Two-function IndexedDB wrapper for caching the parsed dataset locally |
 | Unit tests | **Vitest** | Engine golden-file tests, invariant tests on seeded synthetic data, parser fixtures |
 | E2E tests | **Playwright** (small smoke suite) | Sample-data happy path, upload wizard, URL round-trip — nothing screenshot-based |
 | Lint/format | **Biome** | One fast tool instead of ESLint + Prettier + plugin config |
