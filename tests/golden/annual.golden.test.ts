@@ -192,5 +192,11 @@ describe("golden-file validation against the Python LP analysis", () => {
     expect(result.executedSavings).toBeGreaterThan(0);
     expect(result.executedSavings).toBeLessThan(result.totalSavings);
     expect(result.executedCycles).toBeLessThan(result.totalCycles);
+
+    // Pin the headline aggregates (±1% for solver drift). These constants are
+    // what the app and docs advertise — a shift here means the public numbers
+    // need updating too (App.tsx REFERENCE, docs/PRIOR_WORK.md Corrections).
+    expect(Math.abs(result.executedSavings - 3967) / 3967).toBeLessThan(0.01);
+    expect(Math.abs(result.executedCycles - 336.5) / 336.5).toBeLessThan(0.01);
   });
 });

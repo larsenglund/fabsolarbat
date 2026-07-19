@@ -33,6 +33,28 @@ export async function simulateYear(
   return simulateYearSync(highs, hours, options);
 }
 
+/**
+ * Reject parameter combinations that make the LP infeasible, with readable
+ * messages — without this, a bad slider combination would surface as a bare
+ * solver failure mid-year.
+ */
+export function validateEngineParams(params: EngineParams, initialSoc: number): void {
+  const b = params.battery;
+  if (b.maxChargePercent + b.depthOfDischargePercent < 100) {
+    throw new Error(
+      `Infeasible battery limits: max charge ${b.maxChargePercent}% is below the ` +
+        `discharge floor ${100 - b.depthOfDischargePercent}% — the allowed SoC range is empty`,
+    );
+  }
+  const floor = b.usableCapacityKwh * (1 - b.depthOfDischargePercent / 100);
+  if (initialSoc < floor && b.acEfficiency * b.maxPowerKw < floor - initialSoc) {
+    throw new Error(
+      `Infeasible start: initial SoC ${initialSoc.toFixed(2)} kWh is below the ` +
+        `${floor.toFixed(2)} kWh floor and max charge power cannot reach it within the first hour`,
+    );
+  }
+}
+
 export function simulateYearSync(
   highs: Highs,
   hours: HourRecord[],
@@ -43,6 +65,7 @@ export function simulateYearSync(
   if (hours.length < windowHours) {
     throw new Error(`Dataset has ${hours.length} hours; need at least ${windowHours}`);
   }
+  validateEngineParams(params, options.initialSoc ?? 0);
 
   const indexByTime = new Map<number, number>();
   for (let i = 0; i < hours.length; i++) {
@@ -85,14 +108,24 @@ export function simulateYearSync(
       ? estimateSolar(forecastIndex, startIdx, windowHours, solarForecast)
       : rows.map((r) => r.excessSolarKwh);
 
-    const { hourly, summary } = runWindow(highs, {
-      rows,
-      planningSolarKwh: planningSolar,
-      initialSoc: currentSoc,
-      cyclesCompleted: totalCycles,
-      params,
-      usesEstimates,
-    });
+    let hourly: ReturnType<typeof runWindow>["hourly"];
+    let summary: ReturnType<typeof runWindow>["summary"];
+    try {
+      ({ hourly, summary } = runWindow(highs, {
+        rows,
+        planningSolarKwh: planningSolar,
+        initialSoc: currentSoc,
+        cyclesCompleted: totalCycles,
+        params,
+        usesEstimates,
+      }));
+    } catch (err) {
+      throw new Error(
+        `Day ${dayNumber} (window starting ${new Date(time).toISOString().slice(0, 16)}): ` +
+          `${(err as Error).message}`,
+        { cause: err },
+      );
+    }
 
     const dailyCycles =
       params.battery.usableCapacityKwh > 0

@@ -39,5 +39,19 @@ describe("parseMergedCsv", () => {
     expect(() =>
       parseMergedCsv(`${header}\n2024-01-01 01:00,1,2,3\n2024-01-01 00:00,1,2,3\n`),
     ).toThrow(/strictly increasing/);
+    // Duplicates hit the same <= boundary.
+    expect(() =>
+      parseMergedCsv(`${header}\n2024-01-01 00:00,1,2,3\n2024-01-01 00:00,1,2,3\n`),
+    ).toThrow(/strictly increasing/);
+  });
+
+  it("rejects empty numeric fields instead of reading them as 0", () => {
+    expect(() => parseMergedCsv(`${header}\n2024-01-01 00:00,,2,3\n`)).toThrow(/could not parse/);
+    expect(() => parseMergedCsv(`${header}\n2024-01-01 00:00,1,2,\n`)).toThrow(/could not parse/);
+  });
+
+  it("tolerates hour gaps (DST spring-forward)", () => {
+    const rows = parseMergedCsv(`${header}\n2024-03-31 01:00,0,2,0.3\n2024-03-31 03:00,0,2,0.3\n`);
+    expect(rows).toHaveLength(2);
   });
 });

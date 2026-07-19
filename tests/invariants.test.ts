@@ -116,6 +116,29 @@ describe("engine invariants on seeded synthetic data", () => {
     expect(executedHourSum).toBe(expectedHours);
   });
 
+  it("rejects infeasible parameter combinations with readable errors", async () => {
+    const hours = syntheticHours(3, 5);
+    const b = DEFAULT_PARAMS.battery;
+    // Empty SoC range: ceiling below floor.
+    await expect(
+      simulateYear(hours, {
+        params: {
+          ...DEFAULT_PARAMS,
+          battery: { ...b, maxChargePercent: 5, depthOfDischargePercent: 50 },
+        },
+      }),
+    ).rejects.toThrow(/SoC range is empty/);
+    // Day-1 floor unreachable: DoD 10% → floor 12.4 kWh, max first-hour charge 1.9 kWh.
+    await expect(
+      simulateYear(hours, {
+        params: {
+          ...DEFAULT_PARAMS,
+          battery: { ...b, depthOfDischargePercent: 10, maxPowerKw: 2 },
+        },
+      }),
+    ).rejects.toThrow(/cannot reach it within the first hour/);
+  });
+
   it("a battery with zero capacity and zero power changes nothing", async () => {
     // Zero capacity alone is NOT enough: the model (like the Python original)
     // permits same-hour solar pass-through via the battery. Zero power is the

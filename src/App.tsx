@@ -48,7 +48,7 @@ export function App() {
           <button
             type="button"
             disabled
-            title="Coming with the simulation engine (milestone M2)"
+            title="Coming with the core UI (milestone M2)"
             className="rounded-lg bg-accent px-5 py-2.5 font-medium text-white opacity-50"
           >
             Explore sample data
@@ -76,9 +76,9 @@ export function App() {
         </section>
 
         <div className="max-w-2xl rounded-xl border border-border bg-surface-2 p-4 text-sm leading-relaxed text-text-muted">
-          <span className="font-medium text-text">Under construction.</span> The build and deploy
-          pipeline is live (milestone M0). Next up is the simulation engine, ported from the
-          validated Python analysis. Follow the plan in{" "}
+          <span className="font-medium text-text">Under construction.</span> The simulation engine
+          is live and validated against the reference Python analysis (milestone M1). Next up is the
+          interactive UI. Follow the plan in{" "}
           <a
             href={`${REPO_URL}/blob/main/docs/PLAN.md`}
             className="text-accent underline underline-offset-2"

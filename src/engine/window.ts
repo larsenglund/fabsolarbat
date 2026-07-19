@@ -120,7 +120,11 @@ export function runWindow(highs: Highs, input: WindowRunInput): WindowRunResult 
       solarEstimatedTotal += input.planningSolarKwh[t];
       sqErrSum += (input.planningSolarKwh[t] - actualSolar) ** 2;
     } else {
-      soc = plan.soc[t];
+      // Perfect-information path: record the LP plan directly, but clamp to
+      // the true degraded ceiling — the LP's relaxed ceiling (see above) may
+      // hold pre-existing charge above it, and without the estimates pass
+      // there is no other clamp, so the excess would otherwise carry forward.
+      soc = Math.min(plan.soc[t], bounds.maxSoc);
       actualSoc = soc;
       solarActualTotal += actualSolar;
       solarEstimatedTotal += actualSolar;

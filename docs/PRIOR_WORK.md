@@ -108,3 +108,4 @@ Golden data: `annual_battery_results.csv` contains the per-day LP results (costs
 6. The house main fuse (~13.9 kW for 20 A × 400 V) is computed in the Python code but never enforced as a constraint — on the 2024 data the optimizer schedules grid draw up to ~19.8 kW in 56 hours, which a real installation could not do. A grid-draw cap parameter is planned.
 7. The meter data is hourly-netted, so the model permits same-hour solar "pass-through" via the battery (~259 kWh/yr here, worth ~250–300 SEK) — defensible given sub-hourly variation, but worth knowing.
 8. The hybrid solar forecast's "historical morning average" includes today's own morning rows, damping its scale factor toward 1 (ported faithfully).
+9. The driver's loop bound drops the last fully-coverable planning window (`dataEnd − 35 h` where `dataEnd − 34 h` would suffice) — one simulated day lost (Dec 30 on the 2024 dataset). Kept for Python parity.

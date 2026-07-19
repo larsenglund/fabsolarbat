@@ -12,6 +12,8 @@ export function formatSek(value: number): string {
 
 /** Swedish-style percent with comma decimal, e.g. 21.34 → "21,3 %". */
 export function formatPercent(value: number, decimals = 1): string {
-  const fixed = Math.abs(value).toFixed(decimals).replace(".", ",");
-  return `${value < 0 ? MINUS : ""}${fixed}${NBSP}%`;
+  const fixed = Math.abs(value).toFixed(decimals);
+  // Sign follows the ROUNDED magnitude so -0.04 renders "0,0 %", not "−0,0 %".
+  const isNegative = value < 0 && Number(fixed) !== 0;
+  return `${isNegative ? MINUS : ""}${fixed.replace(".", ",")}${NBSP}%`;
 }

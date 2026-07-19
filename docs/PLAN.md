@@ -85,6 +85,15 @@ Numeric comparisons always use explicit tolerances and units in assertion messag
 | 8,760-point charts janky | uPlot is built for exactly this; verify in M2 before adding any downsampling |
 | Scope creep (tariff models, live prices) | v2 list is explicit; cost model designed pluggable so v2 slots in without rework |
 
+## Review backlog (from the M1 code-review workflow — verified findings, deferred)
+
+Apply opportunistically with M2/M3 work; none block current functionality:
+
+- **Engine/M2:** `retainHourly` option + per-day progress streaming for the day drill-down (simulate.ts); throw a readable error when no planning window fits the dataset; tsconfig project-references split so browser code stops seeing Node types
+- **Parser/M3:** validate the header line (headerless CSVs currently lose row 1 silently)
+- **Tests:** direct assertions on the execution-adjustment clamp branches (window.ts estimates path); skipped-day executed-hours accounting on a spliced synthetic dataset; fast SoC-carry (hourly[23]) test; finance payback with degradation + horizon boundary; solver retry-after-failure regression test; perfect-foresight SoC-bound invariants on real data
+- **Docs:** replace ARCHITECTURE's ScenarioParams/HourRecord blocks with the real types from src/engine/types.ts; update the repository-layout tree (planned vs built); generate the 3 day-level golden fixtures the testing table promises, or drop the claim
+
 ## Launch checklist (end of M4)
 
 - [ ] Golden tests green; timed engine run within budget

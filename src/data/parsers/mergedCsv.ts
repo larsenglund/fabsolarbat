@@ -22,9 +22,11 @@ export function parseMergedCsv(text: string): HourRecord[] {
       throw new Error(`Line ${i + 1}: expected 4 columns, got ${parts.length}`);
     }
     const t = parseNaiveTimestamp(parts[0]);
-    const excessSolarKwh = Number(parts[1]);
-    const consumptionKwh = Number(parts[2]);
-    const priceSekPerKwh = Number(parts[3]);
+    // Number("") is 0 — treat empty fields as unparseable, not as zero.
+    const num = (s: string): number => (s.trim() === "" ? Number.NaN : Number(s));
+    const excessSolarKwh = num(parts[1]);
+    const consumptionKwh = num(parts[2]);
+    const priceSekPerKwh = num(parts[3]);
     if (
       t === null ||
       !Number.isFinite(excessSolarKwh) ||
