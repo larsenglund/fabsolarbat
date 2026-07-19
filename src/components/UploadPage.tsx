@@ -81,7 +81,7 @@ function FormatCard({
           <button
             type="button"
             onClick={() => download(templateName, template)}
-            className="text-xs text-accent underline underline-offset-2"
+            className="text-xs text-accent-strong underline underline-offset-2"
           >
             download template
           </button>
@@ -217,7 +217,7 @@ export function UploadPage() {
           <button
             type="button"
             onClick={continuePersisted}
-            className="rounded-lg bg-accent px-3 py-1.5 font-medium text-white"
+            className="rounded-lg bg-accent-strong px-3 py-1.5 font-medium text-on-accent"
           >
             Continue with it
           </button>
@@ -405,7 +405,9 @@ function ModeButton({
       aria-pressed={active}
       onClick={onClick}
       className={`rounded-lg border px-4 py-2 text-sm font-medium transition-colors ${
-        active ? "border-accent bg-accent text-white" : "border-border bg-surface text-text-muted"
+        active
+          ? "border-accent-strong bg-accent-strong text-on-accent"
+          : "border-border bg-surface text-text-muted"
       }`}
     >
       {children}
@@ -499,7 +501,7 @@ function UseButton({ parsed, onUse }: { parsed: Parsed | null; onUse: (p: Parsed
       type="button"
       disabled={!parsed}
       onClick={() => parsed && onUse(parsed)}
-      className="rounded-lg bg-accent px-5 py-2.5 font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-40"
+      className="rounded-lg bg-accent-strong px-5 py-2.5 font-medium text-on-accent transition-opacity hover:opacity-90 disabled:opacity-40"
     >
       Analyze this dataset
     </button>

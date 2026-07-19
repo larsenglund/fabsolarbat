@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef } from "react";
 import uPlot from "uplot";
 import "uplot/dist/uPlot.min.css";
+import { bestWorstDays } from "../lib/days";
 import { useAppStore } from "../store/appStore";
 
 interface ExecutedSeries {
@@ -111,12 +112,32 @@ export function HourlyExplorer() {
 
   if (!series) return null;
 
+  const bestWorst = result ? bestWorstDays(result) : null;
+
   return (
     <div className="rounded-xl border border-border bg-surface p-4">
-      <div className="flex items-baseline justify-between">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h3 className="text-sm font-medium">Hourly explorer</h3>
-        <span className="text-xs text-text-muted">
+        <span className="flex items-center gap-2 text-xs text-text-muted">
           drag to zoom · double-click to reset · click a point to open that day
+          {bestWorst && (
+            <>
+              <button
+                type="button"
+                onClick={() => selectDay(bestWorst.best)}
+                className="rounded-md border border-border px-2 py-0.5 transition-colors hover:border-accent hover:text-text"
+              >
+                open best day
+              </button>
+              <button
+                type="button"
+                onClick={() => selectDay(bestWorst.worst)}
+                className="rounded-md border border-border px-2 py-0.5 transition-colors hover:border-accent hover:text-text"
+              >
+                worst day
+              </button>
+            </>
+          )}
         </span>
       </div>
       <div ref={containerRef} className="mt-2" />

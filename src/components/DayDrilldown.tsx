@@ -1,4 +1,5 @@
-import { useMemo } from "react";
+import { type KeyboardEvent, useEffect, useMemo, useRef } from "react";
+import { bestWorstDays } from "../lib/days";
 import { formatSek } from "../lib/format";
 import { useAppStore } from "../store/appStore";
 
@@ -20,16 +21,14 @@ export function DayDrilldown() {
   const selected = useAppStore((s) => s.selectedDay);
   const selectDay = useAppStore((s) => s.selectDay);
 
-  const bestWorst = useMemo(() => {
-    if (!result) return null;
-    let best = 0;
-    let worst = 0;
-    result.days.forEach((d, i) => {
-      if (d.executedSavings > result.days[best].executedSavings) best = i;
-      if (d.executedSavings < result.days[worst].executedSavings) worst = i;
-    });
-    return { best, worst };
-  }, [result]);
+  const bestWorst = useMemo(() => (result ? bestWorstDays(result) : null), [result]);
+
+  // Focus the panel when it opens so arrow keys and Escape work immediately.
+  const sectionRef = useRef<HTMLElement>(null);
+  const isOpen = result !== null && selected !== null;
+  useEffect(() => {
+    if (isOpen) sectionRef.current?.focus();
+  }, [isOpen]);
 
   if (!result || selected === null) return null;
   const day = result.days[selected];
@@ -53,8 +52,29 @@ export function DayDrilldown() {
   const dischargeH = (v: number) => (v / maxFlow) * (pad.top + innerH - zeroY);
   const socY = (v: number) => pad.top + (1 - v / maxSoc) * innerH;
 
+  const onKeyDown = (e: KeyboardEvent) => {
+    if (e.target instanceof HTMLElement && /^(input|select|textarea)$/i.test(e.target.tagName)) {
+      return;
+    }
+    if (e.key === "ArrowLeft") {
+      e.preventDefault();
+      selectDay(Math.max(0, selected - 1));
+    } else if (e.key === "ArrowRight") {
+      e.preventDefault();
+      selectDay(Math.min(result.days.length - 1, selected + 1));
+    } else if (e.key === "Escape") {
+      selectDay(null);
+    }
+  };
+
   return (
-    <section aria-label="Day detail" className="rounded-xl border border-border bg-surface p-4">
+    <section
+      aria-label="Day detail"
+      className="rounded-xl border border-border bg-surface p-4"
+      ref={sectionRef}
+      tabIndex={-1}
+      onKeyDown={onKeyDown}
+    >
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h3 className="text-sm font-medium">
           Day {day.dayNumber} — {dayLabel(day.t)} 13:00 → +{hourly.length} h

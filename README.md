@@ -1,39 +1,55 @@
 # fabsolarbat — Home Battery Profitability Explorer
 
-A fast, modern web tool for investigating whether installing a home battery is profitable, based on real hourly consumption, solar production and spot-price data. Runs entirely in the browser — upload your own data or explore the built-in Swedish 2024 sample dataset, tweak battery and tariff parameters, and see payback, ROI and hour-by-hour battery behavior instantly.
+**Live at [larsenglund.github.io/fabsolarbat](https://larsenglund.github.io/fabsolarbat/)**
 
-Built on the analysis work in [`larsenglund/notes/elpris batteri`](https://github.com/larsenglund/notes/tree/main/elpris%20batteri): a rolling day-ahead linear-programming optimization of battery charge/discharge against Nord Pool SE3 spot prices, validated over a full year of real household data.
+Would a home battery pay off for you? Find out with your own hourly consumption, solar and spot-price data — simulated against a mathematically optimal day-ahead charging strategy, not vendor napkin math. Everything runs in your browser; your data never leaves your machine.
 
-## What it answers
+![Analysis view](docs/screenshots/analysis.png)
 
-- How much would a battery of size X kWh / Y kW save me per year with *my* consumption profile?
-- What's the payback period, 10-year ROI and NPV — including battery degradation?
-- How does it compare against just putting the money in an index fund?
-- What does the battery actually *do* on a given day? (hourly charge/discharge schedule, state of charge, cost breakdown)
-- How sensitive is the result to battery size, system cost, efficiency, tariffs and price volatility?
+## What it does
 
-## Status
+Each simulated day at 13:00 (when Nord Pool publishes tomorrow's hourly prices) the tool plans the battery's charging and discharging over the next 35 hours with a linear-programming optimizer (HiGHS, compiled to WebAssembly) — charge from solar or cheap grid hours, discharge during expensive ones, respecting power limits, efficiency losses and battery degradation. A full year of real data takes a few seconds, and every parameter change re-simulates automatically.
 
-🏗️ **M2 shipped** — the interactive analysis UI is live: the golden-validated engine runs in a Web Worker (HiGHS WASM, full 2024 year in ~3 s in-browser), driven by a parameter sidebar (battery, tariffs, strategy, economics) with debounced re-simulation. Results show executed-hours accounting throughout: hero stats (savings, payback, horizon net vs index fund), monthly savings, a degradation-aware projection chart, a zoomable full-year hourly explorer, and a per-day drill-down with the classic hourly dispatch table. Earlier: M1 ported and validated the engine, and a code review found the *original Python analysis* double-counted savings ~2× via overlapping planning windows — corrected headline for the reference dataset: **~3,967 SEK/yr (15.8%), payback ≈ 11–24 yr** (docs/PRIOR_WORK.md § Corrections). The sell-at-spot market model prices export revenue (spot + bonus, without Sweden's abolished 60 öre skattereduktion) into both the baseline and the optimizer (~3,016 SEK/yr on the sample data). **M3 shipped**: upload your own data — clear format examples with downloadable templates for each accepted file (merged CSV; Swedish grid-operator energy export; ENTSO-E prices with FX and UTC handling), a validation report, local-only persistence with a remove control, and annualized labeling for partial-year datasets. Next: M4, sharing & polish.
+- **Headline answers:** annual savings, payback time, 10-year net result vs putting the money in an index fund — with honest accounting (every hour counted once, degradation included)
+- **Two market models:** excess solar wasted (no export contract) or sold at spot + export bonus. Sweden's abolished 60 öre/kWh skattereduktion is deliberately not included
+- **Drill all the way down:** monthly savings, a zoomable full-year hourly explorer, and an hour-by-hour dispatch table for any day
+- **Your own data:** upload a merged CSV, a Swedish grid-operator export, or ENTSO-E prices with currency conversion — clear format examples and downloadable templates are shown on the upload page. Data is parsed and stored only in your browser, with a "Remove my data" control
+- **Compare & share:** pin any result as a baseline and watch the deltas as you tweak parameters; every scenario is encoded in the URL, so copying the link shares your exact settings (parameters only — never your data)
 
-The full development plan lives in [`docs/`](docs/):
+## FAQ
+
+**Why are these numbers so much lower than vendor calculations?**
+Three honest choices: (1) the strategy is *optimal*, so real-world results can only be worse, never better; (2) savings are counted against what you would actually have paid, including the hours the battery does nothing; (3) degradation and efficiency losses are modeled. Also note the original Python analysis this tool grew from accidentally double-counted overlapping planning windows (~2× inflation) — the corrected reference figure is ~3 967 kr/yr for the sample household, not 8 300.
+
+**Why does selling solar make the battery look *less* profitable?**
+Because the no-battery baseline improves too. When exports earn money, the battery's solar charging has a real opportunity cost (the sale you gave up), so the battery's *added* value shrinks even though your total bill goes down. The "How it works" page in the app walks through this with numbers.
+
+**Is my data uploaded anywhere?**
+No. The site is static; parsing, simulation and storage all happen in your browser (IndexedDB). The "Remove my data" button on the upload page deletes the stored copy.
+
+**Where does the sample data come from?**
+A real Swedish household in the SE3 price zone, full-year 2024: hourly consumption, solar production and Nord Pool spot prices. See [`data/`](data/).
+
+## Sample data & fixtures
+
+[`data/`](data/) contains the built-in demo dataset and test fixtures:
+
+- `merged_hourly_data.csv` — canonical merged format: `datetime, excess_solar_kwh, consumption_kwh, price_sek_per_kwh`
+- `hourly_production_and_consumption.csv` — raw grid-operator export (Swedish locale, semicolon-separated)
+- `hourly_power_price.csv` — raw ENTSO-E day-ahead price export (EUR/MWh)
+- `eur_to_sek_2024.csv` — daily EUR→SEK exchange rates
+- `annual_battery_results.csv` — golden results from the validated Python LP analysis, used to verify the TypeScript engine
+
+## Project documentation
+
+Built on the analysis work in [`larsenglund/notes/elpris batteri`](https://github.com/larsenglund/notes/tree/main/elpris%20batteri).
 
 | Document | Contents |
 |---|---|
 | [docs/PLAN.md](docs/PLAN.md) | Product spec, features, milestones, testing & deployment plan |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Tech stack, simulation engine spec, data formats, upload pipeline |
-| [docs/DESIGN.md](docs/DESIGN.md) | UI/UX design system — modern, sleek, fast |
-| [docs/PRIOR_WORK.md](docs/PRIOR_WORK.md) | Research summary of the original Python analysis |
-
-## Sample data
-
-[`data/`](data/) contains a full year (2024) of real hourly data from a Swedish household in the SE3 price zone, used as the built-in demo dataset and as golden-file test fixtures:
-
-- `merged_hourly_data.csv` — canonical merged format: `datetime, excess_solar_kwh, consumption_kwh, price_sek_per_kwh`
-- `hourly_production_and_consumption.csv` — raw grid-operator export (Swedish locale, semicolon-separated) — upload-parser test fixture
-- `hourly_power_price.csv` — raw ENTSO-E day-ahead price export (EUR/MWh) — upload-parser test fixture
-- `eur_to_sek_2024.csv` — daily EUR→SEK exchange rates
-- `annual_battery_results.csv` — golden results from the validated Python LP analysis, used to verify the TypeScript engine
+| [docs/DESIGN.md](docs/DESIGN.md) | UI/UX design system |
+| [docs/PRIOR_WORK.md](docs/PRIOR_WORK.md) | Research summary of the original Python analysis, incl. the corrections found while porting |
 
 ## Development
 
@@ -43,10 +59,12 @@ Requires Node ≥ 22.
 npm install
 npm run dev        # dev server
 npm run lint       # Biome (format + lint)
-npm run test       # Vitest unit tests
+npm run test       # Vitest unit tests (incl. golden-file engine validation)
 npm run build      # typecheck + production build → dist/
-npm run test:e2e   # Playwright smoke test against the production build
+npm run test:e2e   # Playwright smoke + accessibility suite against the production build
 ```
+
+The engine is validated against frozen results from the original Python analysis (golden-file tests); the e2e suite includes an axe-core accessibility scan of every view in both color themes.
 
 ## Deployment
 
@@ -56,4 +74,4 @@ One-time setup: in the repo settings, set **Settings → Pages → Build and dep
 
 ## Privacy
 
-All computation happens client-side. Uploaded data never leaves the browser.
+All computation happens client-side. Uploaded data never leaves the browser. No analytics, no tracking.

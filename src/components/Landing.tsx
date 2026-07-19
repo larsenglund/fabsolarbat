@@ -37,7 +37,7 @@ export function Landing() {
         <button
           type="button"
           onClick={() => void exploreSample()}
-          className="rounded-lg bg-accent px-5 py-2.5 font-medium text-white transition-opacity hover:opacity-90"
+          className="rounded-lg bg-accent-strong px-5 py-2.5 font-medium text-on-accent transition-opacity hover:opacity-90"
         >
           Explore sample data
         </button>

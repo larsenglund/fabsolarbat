@@ -25,6 +25,12 @@ export interface AppState {
   selectedDay: number | null;
   /** Previously uploaded dataset restored from IndexedDB, if any. */
   persisted: PersistedDataset | null;
+  /**
+   * Pinned A/B baseline: a frozen result + the exact scenario that produced
+   * it. Cleared whenever the dataset changes (cross-dataset deltas would be
+   * meaningless).
+   */
+  baseline: PinnedBaseline | null;
 
   setView: (view: AppState["view"]) => void;
   initPersisted: () => Promise<void>;
@@ -36,6 +42,14 @@ export interface AppState {
   setFinance: (patch: Partial<FinanceParams>) => void;
   resetParams: () => void;
   selectDay: (index: number | null) => void;
+  pinBaseline: () => void;
+  clearBaseline: () => void;
+}
+
+export interface PinnedBaseline {
+  result: AnnualResult;
+  params: EngineParams;
+  finance: FinanceParams;
 }
 
 type DeepPartial<T> = { [K in keyof T]?: Partial<T[K]> };
@@ -77,6 +91,7 @@ export const useAppStore = create<AppState>((set, get) => {
     error: null,
     selectedDay: null,
     persisted: null,
+    baseline: null,
 
     setView: (view) => set({ view }),
 
@@ -90,7 +105,7 @@ export const useAppStore = create<AppState>((set, get) => {
       if (get().datasetMeta?.source === "sample") return;
       try {
         const { hours, meta } = await loadSampleDataset();
-        set({ dataset: hours, datasetMeta: meta, result: null, selectedDay: null });
+        set({ dataset: hours, datasetMeta: meta, result: null, selectedDay: null, baseline: null });
         scheduleRun();
       } catch (err) {
         set({ error: err instanceof Error ? err.message : String(err) });
@@ -105,6 +120,7 @@ export const useAppStore = create<AppState>((set, get) => {
         error: null,
         result: null,
         selectedDay: null,
+        baseline: null,
       });
       const persisted: PersistedDataset = { hours, meta, savedAt: Date.now() };
       set({ persisted });
@@ -122,6 +138,7 @@ export const useAppStore = create<AppState>((set, get) => {
         error: null,
         result: null,
         selectedDay: null,
+        baseline: null,
       });
       scheduleRun();
     },
@@ -131,7 +148,7 @@ export const useAppStore = create<AppState>((set, get) => {
       const wasUserData = get().datasetMeta?.source === "user";
       set({ persisted: null });
       if (wasUserData) {
-        set({ dataset: null, datasetMeta: null, result: null, view: "landing" });
+        set({ dataset: null, datasetMeta: null, result: null, view: "landing", baseline: null });
       }
     },
 
@@ -148,5 +165,13 @@ export const useAppStore = create<AppState>((set, get) => {
     },
 
     selectDay: (index) => set({ selectedDay: index }),
+
+    pinBaseline: () => {
+      const { result, params, finance, progress } = get();
+      if (!result || progress !== null) return;
+      set({ baseline: { result, params, finance } });
+    },
+
+    clearBaseline: () => set({ baseline: null }),
   };
 });

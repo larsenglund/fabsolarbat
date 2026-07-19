@@ -86,6 +86,79 @@ test("upload: separate energy + price fixtures merge and analyze", async ({ page
   await expect(hero.getByText(/kr\/yr/).first()).toBeVisible({ timeout: 90_000 });
 });
 
+test("shared link opens the sample analysis with the scenario applied", async ({ page }) => {
+  // d=sample opens straight into analysis; mdl=sell applies sell-at-spot.
+  await page.goto("/?d=sample&mdl=sell");
+  await expect(page.getByText(/Sell-at-spot model/)).toBeVisible();
+  const hero = page.getByLabel("Headline results");
+  await expect(hero.getByText(/3 016 kr\/yr/)).toBeVisible({ timeout: 90_000 });
+
+  // The address bar tracks the scenario: reverting the model drops its key.
+  await page.getByLabel("Excess solar", { exact: true }).selectOption("no-sell");
+  await expect(hero.getByText(/3 967 kr\/yr/)).toBeVisible({ timeout: 90_000 });
+  expect(page.url()).not.toContain("mdl=");
+  expect(page.url()).toContain("d=sample");
+  await expect(page.getByRole("button", { name: "Copy link" })).toBeVisible();
+});
+
+test("baseline pin shows deltas as parameters change", async ({ page }) => {
+  await page.goto("/?d=sample");
+  const hero = page.getByLabel("Headline results");
+  await expect(hero.getByText(/3 967 kr\/yr/)).toBeVisible({ timeout: 90_000 });
+
+  await page.getByRole("button", { name: "Pin baseline" }).click();
+  await expect(page.getByRole("button", { name: /Baseline pinned/ })).toBeVisible();
+
+  // Switching to sell-at-spot shrinks the battery's value vs the pinned run.
+  await page.getByLabel("Excess solar", { exact: true }).selectOption("sell-at-spot");
+  await expect(hero.getByText(/3 016 kr\/yr/)).toBeVisible({ timeout: 90_000 });
+  await expect(hero.getByText(/vs baseline/).first()).toBeVisible();
+
+  await page.getByRole("button", { name: /Baseline pinned/ }).click();
+  await expect(hero.getByText(/vs baseline/)).toHaveCount(0);
+});
+
+test("remove my data clears the persisted dataset", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Upload your data" }).click();
+  await page.locator("#merged-file").setInputFiles("data/merged_hourly_data.csv");
+  await expect(page.getByText("Checked ✓")).toBeVisible({ timeout: 20_000 });
+  await page.getByRole("button", { name: "Analyze this dataset" }).click();
+  const hero = page.getByLabel("Headline results");
+  await expect(hero.getByText(/kr\/yr/).first()).toBeVisible({ timeout: 90_000 });
+
+  // Persistence: after a reload the landing offers to continue.
+  await page.reload();
+  await expect(page.getByRole("button", { name: /Continue with your data/ })).toBeVisible();
+
+  // Removing clears IndexedDB — the offer disappears and the store is empty.
+  await page.getByRole("button", { name: "Upload your data" }).click();
+  await page.getByRole("button", { name: "Remove my data" }).click();
+  // The stored-data panel disappears only after the IndexedDB delete resolves.
+  await expect(page.getByRole("button", { name: "Remove my data" })).toHaveCount(0);
+  await page.reload();
+  await expect(page.getByRole("button", { name: "Upload your data" })).toBeVisible();
+  await expect(page.getByRole("button", { name: /Continue with your data/ })).toHaveCount(0);
+  const keys = await page.evaluate(
+    () =>
+      new Promise((resolve) => {
+        const req = indexedDB.open("keyval-store");
+        req.onsuccess = () => {
+          const db = req.result;
+          if (!db.objectStoreNames.contains("keyval")) {
+            resolve([]);
+            return;
+          }
+          const get = db.transaction("keyval").objectStore("keyval").getAllKeys();
+          get.onsuccess = () => resolve(get.result);
+          get.onerror = () => resolve(["getAllKeys failed"]);
+        };
+        req.onerror = () => resolve(["open failed"]);
+      }),
+  );
+  expect(keys).toEqual([]);
+});
+
 test("upload: a malformed file gets a readable error", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("button", { name: "Upload your data" }).click();

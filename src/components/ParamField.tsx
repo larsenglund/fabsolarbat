@@ -20,7 +20,7 @@ export function HelpButton({
       aria-label={`Explain ${subject}`}
       className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border text-[10px] leading-none transition-colors ${
         open
-          ? "border-accent bg-accent text-white"
+          ? "border-accent-strong bg-accent-strong text-on-accent"
           : "border-border text-text-muted hover:border-accent hover:text-accent"
       }`}
     >

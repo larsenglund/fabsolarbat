@@ -20,6 +20,11 @@ export function Analysis() {
       <div className="min-w-0 flex-1">
         <AssumptionsBar />
 
+        {/* Screen-reader announcement of run state (progress bar is visual only). */}
+        <span className="sr-only" role="status">
+          {progress !== null ? "Simulation running" : result ? "Results up to date" : ""}
+        </span>
+
         {error && (
           <div
             role="alert"
