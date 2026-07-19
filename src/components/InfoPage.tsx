@@ -118,6 +118,54 @@ export function InfoPage() {
         </p>
       </Section>
 
+      <Section title="Why selling solar shrinks the battery's value">
+        <p>
+          A common surprise: turn on the sell-at-spot model and the battery's savings <em>drop</em>{" "}
+          — even though selling solar is obviously better than wasting it. The resolution is that
+          the tool always reports the battery's <strong>added value</strong>: the gap between the
+          same household with and without a battery. Selling improves <em>both</em> of those bills,
+          but it improves the no-battery baseline <em>more</em>, because a house without a battery
+          sells every excess kilowatt-hour, while the battery diverts some into storage and gives up
+          those sales. On the 2024 sample data:
+        </p>
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[420px] border-collapse text-sm tabular-nums">
+            <thead>
+              <tr className="border-b border-border text-left">
+                <th className="py-1.5 pr-3 font-medium text-text">Yearly cost (sample data)</th>
+                <th className="px-3 py-1.5 font-medium text-text">Solar wasted</th>
+                <th className="px-3 py-1.5 font-medium text-text">Solar sold</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr className="border-b border-border/50">
+                <td className="py-1.5 pr-3">Without battery</td>
+                <td className="px-3 py-1.5">25 164 kr</td>
+                <td className="px-3 py-1.5">22 347 kr</td>
+              </tr>
+              <tr className="border-b border-border/50">
+                <td className="py-1.5 pr-3">With battery</td>
+                <td className="px-3 py-1.5">21 197 kr</td>
+                <td className="px-3 py-1.5">19 331 kr</td>
+              </tr>
+              <tr>
+                <td className="py-1.5 pr-3 font-medium text-text">Battery's added value</td>
+                <td className="px-3 py-1.5 font-medium text-text">3 967 kr/yr</td>
+                <td className="px-3 py-1.5 font-medium text-text">3 016 kr/yr</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p>
+          Read the columns top to bottom: the household is best off selling <em>and</em> owning a
+          battery (19 331 kr). But since you can sell solar without buying anything, the fair
+          question for the battery is what it adds on top — and once every stored kilowatt-hour
+          carries the cost of a foregone sale, its edge per solar kWh shrinks to the tax-and-fee
+          wedge between buying and selling prices. The no-sell model, by pretending exports are
+          worthless, quietly flatters the battery.
+        </p>
+      </Section>
+
       <Section title="From savings to a verdict">
         <p>
           The yearly saving feeds three viewpoints. <strong>Payback</strong>: how many years of

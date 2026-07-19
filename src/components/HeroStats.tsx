@@ -51,28 +51,36 @@ export function HeroStats() {
         : "default";
 
   return (
-    <section
-      aria-label="Headline results"
-      className="grid grid-cols-1 gap-px overflow-hidden rounded-xl border border-border bg-border sm:grid-cols-3"
-    >
-      <Tile
-        label="Annual savings"
-        value={`${formatSek(result.executedSavings)}/yr`}
-        sub={`${formatPercent(result.executedSavingsPct)} of the no-battery cost`}
-        tone={result.executedSavings > 0 ? "positive" : "negative"}
-      />
-      <Tile
-        label="Payback"
-        value={analysis.paybackYears === null ? "never" : `${analysis.paybackYears.toFixed(1)} yr`}
-        sub={`at ${formatSek(finance.systemCostSek)} system cost`}
-        tone={paybackTone}
-      />
-      <Tile
-        label={`${finance.horizonYears}-yr net result`}
-        value={formatSek(net)}
-        sub={`index fund instead: +${formatSek(analysis.alternativeProfit)}`}
-        tone={net >= 0 ? "positive" : "negative"}
-      />
+    <section aria-label="Headline results">
+      <div className="grid grid-cols-1 gap-px overflow-hidden rounded-xl border border-border bg-border sm:grid-cols-3">
+        <Tile
+          label="Annual savings"
+          value={`${formatSek(result.executedSavings)}/yr`}
+          sub={`${formatPercent(result.executedSavingsPct)} of the no-battery cost`}
+          tone={result.executedSavings > 0 ? "positive" : "negative"}
+        />
+        <Tile
+          label="Payback"
+          value={
+            analysis.paybackYears === null ? "never" : `${analysis.paybackYears.toFixed(1)} yr`
+          }
+          sub={`at ${formatSek(finance.systemCostSek)} system cost`}
+          tone={paybackTone}
+        />
+        <Tile
+          label={`${finance.horizonYears}-yr net result`}
+          value={formatSek(net)}
+          sub={`index fund instead: +${formatSek(analysis.alternativeProfit)}`}
+          tone={net >= 0 ? "positive" : "negative"}
+        />
+      </div>
+      <p className="mt-2 text-xs leading-relaxed text-text-muted">
+        These figures are the battery's <em>added</em> value: the same household would pay{" "}
+        {formatSek(result.executedOriginalCost)}/yr without a battery and{" "}
+        {formatSek(result.executedOptimizedCost)}/yr with one, under the current market model.
+        Changing the model (e.g. selling solar) moves both bills — the tiles show only their
+        difference, which is what the battery investment buys.
+      </p>
     </section>
   );
 }
