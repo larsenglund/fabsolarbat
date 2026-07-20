@@ -56,7 +56,7 @@ export function App() {
             <rect x="12.75" y="12.5" width="3.5" height="7" rx="1" fill="currentColor" />
             <rect x="18.5" y="12.5" width="3.5" height="7" rx="1" fill="currentColor" />
           </svg>
-          fabsolarbat
+          Batterikollen
         </button>
         <div className="flex items-center gap-3">
           {view === "analysis" && datasetMeta && (

@@ -247,7 +247,7 @@ export function UploadPage() {
             source="Build it in any spreadsheet: timestamp, exported solar (kWh), grid consumption (kWh), spot price (SEK/kWh, before VAT). Save as CSV."
             example={MERGED_EXAMPLE}
             template={MERGED_TEMPLATE}
-            templateName="fabsolarbat-template.csv"
+            templateName="batterikollen-template.csv"
           />
           <div className="flex flex-col gap-4">
             <FileInput
@@ -270,14 +270,14 @@ export function UploadPage() {
               source="Export from your grid operator or energy portal (hourly consumption, and production/export if you have solar). Semicolons, decimal commas and extra columns are handled."
               example={ENERGY_EXAMPLE}
               template={ENERGY_TEMPLATE}
-              templateName="fabsolarbat-energy-template.csv"
+              templateName="batterikollen-energy-template.csv"
             />
             <FormatCard
               title="2 · Price file"
               source="Day-ahead prices for your bidding zone, e.g. an ENTSO-E transparency export, or a simple two-column file."
               example={PRICE_EXAMPLE}
               template={PRICE_TEMPLATE}
-              templateName="fabsolarbat-price-template.csv"
+              templateName="batterikollen-price-template.csv"
             />
             <FormatCard
               title="3 · Exchange rates (optional)"

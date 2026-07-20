@@ -1,4 +1,4 @@
-# fabsolarbat — Home Battery Profitability Explorer
+# Batterikollen — Home Battery Profitability Explorer
 
 **Live at [larsenglund.github.io/fabsolarbat](https://larsenglund.github.io/fabsolarbat/)**
 
