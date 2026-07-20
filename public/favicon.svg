@@ -1,6 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
   <title>fabsolarbat</title>
-  <rect x="4" y="9" width="22" height="14" rx="3" fill="none" stroke="#C15F3C" stroke-width="2.5"/>
-  <rect x="27" y="13" width="3" height="6" rx="1" fill="#C15F3C"/>
-  <path d="M17.5 11 L12 17 h4 l-1.5 4 L20 15 h-4 z" fill="#C15F3C"/>
+  <rect x="3" y="9" width="23" height="14" rx="3" fill="none" stroke="#2563EB" stroke-width="2.5"/>
+  <rect x="28" y="13" width="3" height="6" rx="1" fill="#2563EB"/>
+  <rect x="7" y="12.5" width="3.5" height="7" rx="1" fill="#2563EB"/>
+  <rect x="12.75" y="12.5" width="3.5" height="7" rx="1" fill="#2563EB"/>
+  <rect x="18.5" y="12.5" width="3.5" height="7" rx="1" fill="#2563EB"/>
 </svg>

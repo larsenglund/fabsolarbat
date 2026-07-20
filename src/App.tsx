@@ -29,8 +29,29 @@ export function App() {
       </div>
 
       <header className="flex items-center justify-between gap-3 py-6">
-        <span className="text-lg font-semibold tracking-tight">
-          <span className="text-accent">⚡</span> fabsolarbat
+        <span className="flex items-center gap-2 text-lg font-semibold tracking-tight">
+          <svg
+            viewBox="0 0 32 32"
+            className="h-[1.15em] w-[1.15em] text-accent"
+            role="presentation"
+            aria-hidden
+            fill="none"
+          >
+            <rect
+              x="3"
+              y="9"
+              width="23"
+              height="14"
+              rx="3"
+              stroke="currentColor"
+              strokeWidth="2.5"
+            />
+            <rect x="28" y="13" width="3" height="6" rx="1" fill="currentColor" />
+            <rect x="7" y="12.5" width="3.5" height="7" rx="1" fill="currentColor" />
+            <rect x="12.75" y="12.5" width="3.5" height="7" rx="1" fill="currentColor" />
+            <rect x="18.5" y="12.5" width="3.5" height="7" rx="1" fill="currentColor" />
+          </svg>
+          fabsolarbat
         </span>
         <div className="flex items-center gap-3">
           {view === "analysis" && datasetMeta && (
