@@ -134,7 +134,7 @@ export function ParamSidebar() {
           <LabeledField
             label="Excess solar"
             htmlFor="market-model"
-            help="What happens to solar power you don't use or store. 'Not sold' assumes exports earn nothing (the original analysis, a worst case that flatters the battery). 'Sold at spot + bonus' credits every exported kWh at the spot price plus the export bonus — in both the no-battery baseline and the battery scenario — so charging the battery from solar has a real cost: the sale you gave up."
+            help="What happens to solar power you don't use or store. 'Not sold' assumes exports earn nothing — no export contract; a worst case that flatters the battery. 'Sold at spot + bonus' credits every exported kWh at the spot price plus the export bonus — in both the no-battery baseline and the battery scenario — so charging the battery from solar has a real cost: the sale you gave up."
           >
             <select
               id="market-model"
@@ -142,7 +142,7 @@ export function ParamSidebar() {
               onChange={(e) => setParams({ strategy: { model: e.target.value as MarketModel } })}
               className="mt-1 w-full rounded-md border border-border bg-surface px-2 py-1.5 text-[13px] focus:border-accent focus:outline-none"
             >
-              <option value="no-sell">Not sold (wasted) — original model</option>
+              <option value="no-sell">Not sold (wasted)</option>
               <option value="sell-at-spot">Sold at spot + bonus</option>
             </select>
           </LabeledField>
