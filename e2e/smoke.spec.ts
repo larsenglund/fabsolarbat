@@ -35,6 +35,13 @@ test("sample analysis runs end-to-end in the browser (wasm worker)", async ({ pa
   // battery is worth less (golden-pinned 3 016 kr/yr).
   await page.getByLabel("Excess solar", { exact: true }).selectOption("sell-at-spot");
   await expect(hero.getByText(/3\u00a0016\u00a0kr\/yr/)).toBeVisible({ timeout: 90_000 });
+
+  // The dataset chip returns to the landing page, where other data can be
+  // chosen; re-entering the sample keeps the loaded dataset.
+  await page.getByRole("button", { name: /switch data/ }).click();
+  await expect(page.getByRole("heading", { level: 1 })).toContainText("home battery");
+  await page.getByRole("button", { name: "Explore sample data" }).click();
+  await expect(hero.getByText(/kr\/yr/).first()).toBeVisible({ timeout: 90_000 });
 });
 
 test("how-it-works page and parameter help", async ({ page }) => {
