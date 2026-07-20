@@ -110,11 +110,11 @@ export function InfoPage() {
           Two accounting rules matter more than they sound. <strong>First</strong>: consecutive
           daily plans overlap by 11 hours, and only the first 24 hours of each plan actually happen
           — the tail is replanned the next day. The tool counts every real hour exactly once
-          ("executed-hours accounting"). Skipping this rule double-counts the overlap and roughly{" "}
-          <strong>doubles</strong> the apparent savings — an error we found in the original analysis
-          this tool grew out of. <strong>Second</strong>: every kWh the battery delivers counts
-          toward its cycle life, so capacity fades over the years, and the long-term projections use
-          that fading capacity rather than year-one performance forever.
+          ("executed-hours accounting"); a calculation that skips this rule double-counts the
+          overlap and roughly <strong>doubles</strong> the apparent savings, an easy trap for
+          battery calculators. <strong>Second</strong>: every kWh the battery delivers counts toward
+          its cycle life, so capacity fades over the years, and the long-term projections use that
+          fading capacity rather than year-one performance forever.
         </p>
       </Section>
 
@@ -191,13 +191,13 @@ export function InfoPage() {
       </Section>
 
       <p className="mt-10 max-w-3xl text-sm text-text-muted">
-        Want the full technical story? The engine is open source and validated line-by-line against
-        the original analysis — see the docs in the{" "}
+        Want the full technical story? The simulation engine is open source, heavily tested against
+        a full year of real data, and documented in detail — see the{" "}
         <a
           href="https://github.com/larsenglund/fabsolarbat"
           target="_blank"
           rel="noreferrer"
-          className="text-accent underline underline-offset-2"
+          className="text-accent-strong underline underline-offset-2"
         >
           GitHub repository
         </a>

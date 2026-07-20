@@ -17,13 +17,19 @@ async function expectNoSeriousViolations(page: Page) {
 }
 
 for (const scheme of ["light", "dark"] as const) {
-  test(`landing and upload pages have no serious a11y violations (${scheme})`, async ({ page }) => {
+  test(`landing, upload and info pages have no serious a11y violations (${scheme})`, async ({
+    page,
+  }) => {
     await page.emulateMedia({ colorScheme: scheme });
     await page.goto("/");
     await expectNoSeriousViolations(page);
 
     await page.getByRole("button", { name: "Upload your data" }).click();
     await expect(page.getByRole("heading", { name: "Use your own data" })).toBeVisible();
+    await expectNoSeriousViolations(page);
+
+    await page.getByRole("button", { name: "How it works" }).click();
+    await expect(page.getByRole("heading", { name: "How the calculations work" })).toBeVisible();
     await expectNoSeriousViolations(page);
   });
 }
