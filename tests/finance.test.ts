@@ -1,25 +1,23 @@
 import { describe, expect, it } from "vitest";
-import { analyzeInvestment, DEFAULT_FINANCE } from "../src/engine/finance";
+import { alternativeProfitOver, analyzeInvestment, DEFAULT_FINANCE } from "../src/engine/finance";
 import { DEFAULT_PARAMS } from "../src/engine/types";
 
 describe("investment analysis", () => {
   const battery = DEFAULT_PARAMS.battery;
 
-  it("index-fund payback-equivalent is ln2/ln(1+r)", () => {
-    const a = analyzeInvestment(4000, 300, battery, DEFAULT_FINANCE);
-    // 8% default: money doubles in ~9.0 years
-    expect(a.alternativePaybackYears).toBeCloseTo(Math.log(2) / Math.log(1.08), 10);
-    expect(a.alternativePaybackYears).toBeGreaterThan(8.9);
-    expect(a.alternativePaybackYears).toBeLessThan(9.1);
+  it("index-fund profit over a period compounds from the system cost", () => {
+    // 75 000 kr at 8% over 10 years: 75 000 · (1.08^10 − 1) ≈ 86 919 kr
+    expect(alternativeProfitOver(10, DEFAULT_FINANCE)).toBeCloseTo(75_000 * (1.08 ** 10 - 1), 6);
+    // At the doubling time (ln2/ln1.08 ≈ 9 yr) the profit equals the cost.
+    expect(alternativeProfitOver(Math.log(2) / Math.log(1.08), DEFAULT_FINANCE)).toBeCloseTo(
+      75_000,
+      6,
+    );
   });
 
-  it("index-fund payback-equivalent is null at zero return", () => {
-    const a = analyzeInvestment(4000, 300, battery, {
-      ...DEFAULT_FINANCE,
-      alternativeReturnRate: 0,
-    });
-    expect(a.alternativePaybackYears).toBeNull();
-    expect(a.alternativeProfit).toBe(0);
+  it("index-fund profit is zero at zero return or zero time", () => {
+    expect(alternativeProfitOver(10, { ...DEFAULT_FINANCE, alternativeReturnRate: 0 })).toBe(0);
+    expect(alternativeProfitOver(0, DEFAULT_FINANCE)).toBe(0);
   });
 
   it("battery payback without degradation is cost/savings", () => {

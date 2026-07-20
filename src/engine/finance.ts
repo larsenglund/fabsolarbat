@@ -67,12 +67,11 @@ export interface InvestmentAnalysis {
   npv: number;
   /** Profit the same money would earn in the alternative investment. */
   alternativeProfit: number;
-  /**
-   * Payback-equivalent for the alternative investment: years until its
-   * compound profit matches the invested amount (i.e. the money doubles),
-   * ln 2 / ln(1+r). Directly comparable to paybackYears. Null if r ≤ 0.
-   */
-  alternativePaybackYears: number | null;
+}
+
+/** Compound profit of the alternative investment after `years` years. */
+export function alternativeProfitOver(years: number, finance: FinanceParams): number {
+  return finance.systemCostSek * ((1 + finance.alternativeReturnRate) ** years - 1);
 }
 
 export function analyzeInvestment(
@@ -110,9 +109,5 @@ export function analyzeInvestment(
     roiPct: ((horizonSavings - finance.systemCostSek) / finance.systemCostSek) * 100,
     npv,
     alternativeProfit,
-    alternativePaybackYears:
-      finance.alternativeReturnRate > 0
-        ? Math.log(2) / Math.log(1 + finance.alternativeReturnRate)
-        : null,
   };
 }

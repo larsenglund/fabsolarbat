@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { analyzeInvestment, type FinanceParams } from "../engine/finance";
+import { alternativeProfitOver, analyzeInvestment, type FinanceParams } from "../engine/finance";
 import type { AnnualResult, BatteryParams } from "../engine/types";
 import { formatPercent, formatSek } from "../lib/format";
 import { useAppStore } from "../store/appStore";
@@ -147,8 +147,8 @@ export function HeroStats() {
             analysis.paybackYears === null ? "never" : `${analysis.paybackYears.toFixed(1)} yr`
           }
           sub={`at ${formatSek(finance.systemCostSek)} system cost${
-            analysis.alternativePaybackYears !== null
-              ? ` · index fund earns that in ${analysis.alternativePaybackYears.toFixed(1)} yr`
+            analysis.paybackYears !== null
+              ? ` · index fund earns +${formatSek(alternativeProfitOver(analysis.paybackYears, finance))} in that time`
               : ""
           }`}
           tone={paybackTone}
