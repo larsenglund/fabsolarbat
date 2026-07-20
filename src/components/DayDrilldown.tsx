@@ -164,7 +164,7 @@ export function DayDrilldown() {
           return (
             <g key={h.t} opacity={i < day.executedHours ? 1 : 0.45}>
               {h.gridToBattery > 0.005 && (
-                <rect x={cx} y={zeroY - g2bH} width={barW} height={g2bH} fill="#5b6b9e">
+                <rect x={cx} y={zeroY - g2bH} width={barW} height={g2bH} fill="#8461a8">
                   <title>{`${hourLabel(h.t)} grid→battery ${h.gridToBattery.toFixed(2)} kWh`}</title>
                 </rect>
               )}
@@ -207,7 +207,7 @@ export function DayDrilldown() {
           solar→battery
         </span>
         <span>
-          <span className="mr-1 inline-block h-2.5 w-2.5" style={{ background: "#5b6b9e" }} />{" "}
+          <span className="mr-1 inline-block h-2.5 w-2.5" style={{ background: "#8461a8" }} />{" "}
           grid→battery
         </span>
         <span>

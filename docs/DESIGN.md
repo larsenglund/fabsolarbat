@@ -1,6 +1,6 @@
 # UI / UX Design System
 
-Goal: a **modern, sleek, fast** analysis tool that feels like a crafted product, not a spreadsheet. The design language below is Claude-designed for this project: calm warm neutrals, one confident accent, generous whitespace, dense-but-legible data displays, and motion used only to communicate state.
+Goal: a **modern, sleek, fast** analysis tool that feels like a crafted product, not a spreadsheet. The design language below is Claude-designed for this project: calm cool neutrals, one confident accent, generous whitespace, dense-but-legible data displays, and motion used only to communicate state.
 
 ## Principles
 
@@ -14,21 +14,23 @@ Goal: a **modern, sleek, fast** analysis tool that feels like a crafted product,
 
 ### Color tokens
 
-Warm paper neutrals with a terracotta accent; semantic colors reserved for meaning (savings/costs), never decoration.
+Cool neutral grays with a confident blue accent; semantic colors reserved for meaning (savings/costs), never decoration. All accent/text pairings hold WCAG AA (>=4.5:1), enforced by the axe-core e2e scan.
 
 | Token | Light | Dark | Use |
 |---|---|---|---|
-| `--bg` | `#FAF9F5` | `#1F1E1B` | app background |
-| `--surface` | `#FFFFFF` | `#282724` | cards, panels |
-| `--surface-2` | `#F0EEE6` | `#31302C` | inset areas, table stripes |
-| `--border` | `#E3E0D5` | `#3D3B36` | hairlines |
-| `--text` | `#1F1E1B` | `#F0EEE6` | primary text |
-| `--text-muted` | `#6E6B63` | `#A6A39A` | labels, captions |
-| `--accent` | `#C15F3C` | `#D97757` | primary actions, focus, hero highlights |
+| `--bg` | `#F7F9FB` | `#15181D` | app background |
+| `--surface` | `#FFFFFF` | `#1D2127` | cards, panels |
+| `--surface-2` | `#EDF1F5` | `#252A31` | inset areas, table stripes |
+| `--border` | `#DBE2EA` | `#363D47` | hairlines |
+| `--text` | `#1B1F26` | `#E7EAEE` | primary text |
+| `--text-muted` | `#5F6B78` | `#98A2AD` | labels, captions |
+| `--accent` | `#2563EB` | `#60A5FA` | primary actions, focus, hero highlights |
+| `--accent-strong` | `#2563EB` | `#60A5FA` | filled-button background (paired with `--on-accent`) |
+| `--on-accent` | `#FFFFFF` | `#15181D` | text on filled accent controls |
 | `--positive` | `#2E7D5B` | `#4CAF8B` | savings, earnings |
 | `--negative` | `#B3382E` | `#E06156` | costs, warnings |
 
-Chart series palette (categorical, color-blind-checked in both themes): accent terracotta, deep teal `#2C7A8C`, ochre `#B98A2F`, slate blue `#5B6B9E`, muted plum `#8A5A7E`. Energy-flow charts use fixed semantic hues: solar = ochre, grid = slate, battery = terracotta, SoC = teal line.
+Chart series palette (categorical, color-blind-checked in both themes): accent blue, ochre `#B98A2F`, violet `#8461A8`, deep teal `#2C7A8C`, muted plum `#8A5A7E`. Energy-flow charts use fixed semantic hues: solar = ochre, grid = violet, battery = accent blue, SoC = green line.
 
 ### Typography
 

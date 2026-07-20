@@ -3,15 +3,15 @@
 /* Design tokens — docs/DESIGN.md. Semantic values switch with the color scheme;
    Tailwind utilities (bg-bg, text-text-muted, …) map onto them below. */
 :root {
-  --bg: #faf9f5;
+  --bg: #f7f9fb;
   --surface: #ffffff;
-  --surface-2: #f0eee6;
-  --border: #e3e0d5;
-  --text: #1f1e1b;
-  --text-muted: #6e6b63;
-  --accent: #c15f3c;
+  --surface-2: #edf1f5;
+  --border: #dbe2ea;
+  --text: #1b1f26;
+  --text-muted: #5f6b78;
+  --accent: #2563eb;
   /* Filled-button variant: ≥4.5:1 contrast with --on-accent text (WCAG AA). */
-  --accent-strong: #b8552e;
+  --accent-strong: #2563eb;
   --on-accent: #ffffff;
   --positive: #2e7d5b;
   --negative: #b3382e;
@@ -19,15 +19,15 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #1f1e1b;
-    --surface: #282724;
-    --surface-2: #31302c;
-    --border: #3d3b36;
-    --text: #f0eee6;
-    --text-muted: #a6a39a;
-    --accent: #d97757;
-    --accent-strong: #d97757;
-    --on-accent: #1f1e1b;
+    --bg: #15181d;
+    --surface: #1d2127;
+    --surface-2: #252a31;
+    --border: #363d47;
+    --text: #e7eaee;
+    --text-muted: #98a2ad;
+    --accent: #60a5fa;
+    --accent-strong: #60a5fa;
+    --on-accent: #15181d;
     --positive: #4caf8b;
     --negative: #e06156;
   }
