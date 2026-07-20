@@ -146,7 +146,11 @@ export function HeroStats() {
           value={
             analysis.paybackYears === null ? "never" : `${analysis.paybackYears.toFixed(1)} yr`
           }
-          sub={`at ${formatSek(finance.systemCostSek)} system cost`}
+          sub={`at ${formatSek(finance.systemCostSek)} system cost${
+            analysis.alternativePaybackYears !== null
+              ? ` · index fund earns that in ${analysis.alternativePaybackYears.toFixed(1)} yr`
+              : ""
+          }`}
           tone={paybackTone}
           delta={deltas?.payback}
         />
