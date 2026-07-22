@@ -55,11 +55,14 @@ export function InfoPage() {
 
       <Section title="What a kilowatt-hour really costs">
         <p>
-          Buying: <strong>spot price × VAT + grid transfer fee + retailer markup</strong>. The fee
-          and markup apply to every purchased kWh, which makes avoided purchases more valuable than
-          the spot price alone suggests. Selling (if the sell model is on): exported solar earns{" "}
-          <strong>spot price + export bonus</strong> — no VAT, and Sweden's former 0.60 kr/kWh tax
-          reduction is abolished, so it's deliberately not included.
+          Buying: <strong>spot price × VAT + grid transfer fee + retailer markup</strong>. Note that
+          VAT is on <em>everything</em>: the fee and markup are simply entered as they appear on
+          your bill, VAT already included, while the spot price gets its VAT explicitly —
+          mathematically identical to adding VAT on the whole sum. These per-kWh charges apply to
+          every purchased kWh, which makes avoided purchases more valuable than the spot price alone
+          suggests. Selling (if the sell model is on): exported solar earns{" "}
+          <strong>spot price + export bonus</strong> — no VAT on what you sell, and Sweden's former
+          0.60 kr/kWh tax reduction is abolished, so it's deliberately not included.
         </p>
       </Section>
 

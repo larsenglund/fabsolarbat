@@ -125,7 +125,7 @@ export function ParamSidebar() {
             min={0}
             max={1}
             step={0.01}
-            help="Any fixed per-kWh surcharge your electricity retailer adds on top of the spot price on a variable-price contract. Often a few öre per kWh; monthly fixed fees don't belong here since the battery can't affect them."
+            help="Any fixed per-kWh surcharge your electricity retailer adds on top of the spot price on a variable-price contract. Enter it including VAT, as it appears on your bill. Often a few öre per kWh; monthly fixed fees don't belong here since the battery can't affect them."
             onChange={(v) => setParams({ tariff: { fixedMarkupSekPerKwh: v } })}
           />
         </Group>
