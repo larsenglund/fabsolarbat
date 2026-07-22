@@ -115,7 +115,7 @@ export function ParamSidebar() {
             min={0}
             max={2}
             step={0.005}
-            help="What your grid operator charges for delivering each kWh to your house, including tax — check your grid bill for the per-kWh transfer charge. It applies to every purchased kWh, which is why avoiding purchases (using stored solar) is worth more than the spot price alone suggests."
+            help="Everything you pay per purchased kWh besides the spot price, VAT on spot, and retailer markup: the grid operator's transfer charge PLUS the Swedish energy tax (energiskatt), including their VAT — both usually appear on your grid bill. In 2024 the energy tax alone was ~0.55 kr/kWh incl. VAT, so check that your total here isn't too low. It applies to every purchased kWh, which is why avoiding purchases (using stored solar) is worth more than the spot price alone suggests."
             onChange={(v) => setParams({ tariff: { transferFeeSekPerKwh: v } })}
           />
           <ParamField
