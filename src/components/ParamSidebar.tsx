@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { getPowerTariff, POWER_TARIFFS, type PowerTariffId } from "../engine/powerTariff";
 import type { MarketModel, SolarForecastMethod } from "../engine/types";
 import { useAppStore } from "../store/appStore";
 import { LabeledField, ParamField } from "./ParamField";
@@ -30,6 +31,7 @@ export function ParamSidebar() {
   const resetParams = useAppStore((s) => s.resetParams);
   const b = params.battery;
   const t = params.tariff;
+  const powerTariff = getPowerTariff(t.powerTariff);
 
   return (
     <aside className="w-full shrink-0 lg:w-72" aria-label="Simulation parameters">
@@ -128,6 +130,61 @@ export function ParamSidebar() {
             help="Any fixed per-kWh surcharge your electricity retailer adds on top of the spot price on a variable-price contract. Enter it including VAT, as it appears on your bill. Often a few öre per kWh; monthly fixed fees don't belong here since the battery can't affect them."
             onChange={(v) => setParams({ tariff: { fixedMarkupSekPerKwh: v } })}
           />
+          <LabeledField
+            label="Power tariff (effektavgift)"
+            htmlFor="power-tariff"
+            help="A monthly grid fee based on your highest hourly power draw (kW) rather than on energy (kWh). A battery can lower it by covering the house's consumption during the measured peak hours — and must avoid creating new peaks when it charges from the grid. When a tariff is selected, the optimizer plans for both the energy price and the peak fee, and the fee difference is added to the savings. Pick your grid operator's tariff; remember to also set the grid transfer fee above to that operator's per-kWh fee (plus energy tax)."
+          >
+            <select
+              id="power-tariff"
+              value={t.powerTariff ?? "none"}
+              onChange={(e) =>
+                setParams({
+                  tariff: {
+                    powerTariff:
+                      e.target.value === "none" ? null : (e.target.value as PowerTariffId),
+                  },
+                })
+              }
+              className="mt-1 w-full rounded-md border border-border bg-surface px-2 py-1.5 text-[13px] focus:border-accent focus:outline-none"
+            >
+              <option value="none">None</option>
+              {Object.values(POWER_TARIFFS).map((pt) => (
+                <option key={pt.id} value={pt.id}>
+                  {pt.label}
+                </option>
+              ))}
+            </select>
+            {powerTariff && (
+              <div className="mt-1.5 text-xs leading-relaxed text-text-muted">
+                <p>
+                  {powerTariff.rules}{" "}
+                  <a
+                    href={powerTariff.sourceUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-accent-strong underline underline-offset-2"
+                  >
+                    Source ↗
+                  </a>
+                </p>
+                {t.transferFeeSekPerKwh !== powerTariff.transferFeeSekPerKwh && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setParams({
+                        tariff: { transferFeeSekPerKwh: powerTariff.transferFeeSekPerKwh },
+                      })
+                    }
+                    className="mt-1.5 w-full rounded-md border border-border px-2 py-1 text-left transition-colors hover:border-accent hover:text-text"
+                  >
+                    Use {powerTariff.operator}'s per-kWh fee as grid transfer fee:{" "}
+                    {powerTariff.transferFeeSekPerKwh} kr/kWh ({powerTariff.transferFeeNote})
+                  </button>
+                )}
+              </div>
+            )}
+          </LabeledField>
         </Group>
 
         <Group title="Strategy">

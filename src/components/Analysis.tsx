@@ -5,6 +5,7 @@ import { HeroStats } from "./HeroStats";
 import { HourlyExplorer } from "./HourlyExplorer";
 import { MonthlyChart } from "./MonthlyChart";
 import { ParamSidebar } from "./ParamSidebar";
+import { PowerFeePanel } from "./PowerFeePanel";
 import { ProjectionChart } from "./ProjectionChart";
 
 export function Analysis() {
@@ -48,6 +49,7 @@ export function Analysis() {
                 <MonthlyChart />
                 <ProjectionChart />
               </div>
+              <PowerFeePanel />
               <HourlyExplorer />
               <DayDrilldown />
             </>

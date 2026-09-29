@@ -18,10 +18,11 @@ describe("yearlySavings", () => {
   it("uses actual savings for year 1 and scales later years by avg capacity", () => {
     const series = yearlySavings(1000, 500, battery, 3);
     expect(series[0]).toBe(1000);
+    // Year 1 already ran at avg capacity (1 + 0.975)/2 = 0.9875.
     // Year 2: cycles 500→1000, factors 0.975 and 0.95, avg 0.9625
-    expect(series[1]).toBeCloseTo(962.5, 9);
+    expect(series[1]).toBeCloseTo((1000 * 0.9625) / 0.9875, 9);
     // Year 3: cycles 1000→1500, factors 0.95 and 0.925, avg 0.9375
-    expect(series[2]).toBeCloseTo(937.5, 9);
+    expect(series[2]).toBeCloseTo((1000 * 0.9375) / 0.9875, 9);
   });
 });
 

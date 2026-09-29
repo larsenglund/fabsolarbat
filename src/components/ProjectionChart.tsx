@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { yearlySavings } from "../engine/finance";
+import { annualize, yearlySavings } from "../engine/finance";
 import { formatSek } from "../lib/format";
 import { useAppStore } from "../store/appStore";
 
@@ -15,7 +15,10 @@ export function ProjectionChart() {
   const data = useMemo(() => {
     if (!result) return null;
     const years = finance.horizonYears;
-    const series = yearlySavings(result.executedSavings, result.executedCycles, battery, years);
+    // Same per-year figures as the headline tiles (scaled when the dataset
+    // isn't one year long).
+    const { annualSavings, annualCycles } = annualize(result);
+    const series = yearlySavings(annualSavings, annualCycles, battery, years);
     const cumulative: number[] = [0];
     for (const s of series) cumulative.push(cumulative[cumulative.length - 1] + s);
     const fund: number[] = [];

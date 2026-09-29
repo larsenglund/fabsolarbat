@@ -8,6 +8,8 @@
  * pandas datetimes the same way; no timezone conversion ever happens.
  */
 
+import type { PeakSample, PowerTariffId } from "./powerTariff";
+
 export interface HourRecord {
   /** Naive wall-clock time of the hour start, as Date.UTC ms. */
   t: number;
@@ -53,6 +55,12 @@ export interface TariffParams {
    * has been abolished and is deliberately NOT part of the default.
    */
   sellBonusSekPerKwh: number;
+  /**
+   * Monthly power tariff (effektavgift) of the grid operator, or null for
+   * none. When set, the optimizer also shaves the tariff's measured peaks and
+   * the fee difference is part of the savings.
+   */
+  powerTariff: PowerTariffId | null;
 }
 
 /**
@@ -102,6 +110,7 @@ export const DEFAULT_PARAMS: EngineParams = {
     transferFeeSekPerKwh: 0.685,
     fixedMarkupSekPerKwh: 0,
     sellBonusSekPerKwh: 0.05,
+    powerTariff: null,
   },
   strategy: {
     model: "no-sell",
@@ -171,7 +180,12 @@ export interface DayResult {
   minPrice: number;
   maxPrice: number;
   priceSpread: number;
+  /** Window-summed discharge in cycles (35 h; Python parity). */
   dailyCycles: number;
+  /**
+   * Cumulative cycles driving degradation after this day: executed discharge
+   * only (window-summed in the pythonParity mode).
+   */
   totalCycles: number;
   capacityFactor: number;
   effectiveCapacityKwh: number;
@@ -197,6 +211,32 @@ export interface DayResult {
   hourly?: HourResult[];
 }
 
+/** One month of the power tariff, without and with the battery. */
+export interface PowerFeeMonth {
+  /** year·12 + month (0-based). */
+  monthKey: number;
+  /** Calendar month 1-12. */
+  month: number;
+  priceSekPerKw: number;
+  baselineKw: number;
+  optimizedKw: number;
+  baselineFee: number;
+  optimizedFee: number;
+  savings: number;
+  /** The measured peaks that set each bill, highest first. */
+  baselinePeaks: PeakSample[];
+  optimizedPeaks: PeakSample[];
+}
+
+export interface PowerFeeSummary {
+  tariffId: PowerTariffId;
+  /** Months touched by the executed hours, ascending. */
+  months: PowerFeeMonth[];
+  baselineFee: number;
+  optimizedFee: number;
+  savings: number;
+}
+
 export interface AnnualResult {
   days: DayResult[];
   /**
@@ -207,12 +247,23 @@ export interface AnnualResult {
   totalOptimizedCost: number;
   totalSavings: number;
   savingsPct: number;
+  /** Final cumulative cycle count that drove degradation (see DayResult.totalCycles). */
   totalCycles: number;
-  /** Honest annual totals: every simulated calendar hour counted once. */
+  /**
+   * Honest annual totals: every simulated calendar hour counted once. With a
+   * power tariff these include the monthly power fees (so they exceed the sum
+   * of the per-day executed figures, which are energy-only).
+   */
   executedOriginalCost: number;
   executedOptimizedCost: number;
   executedSavings: number;
   executedSavingsPct: number;
+  /** Energy (per-kWh) part of executedSavings: Σ days' executedSavings. */
+  executedEnergySavings: number;
+  /** Power-tariff (effektavgift) accounting over the executed hours, or null. */
+  powerFee: PowerFeeSummary | null;
+  /** Executed calendar hours (Σ days' executedHours). */
+  executedHours: number;
   /** Cycles from executed discharge only — use this for finance projections. */
   executedCycles: number;
 }

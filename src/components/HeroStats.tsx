@@ -1,26 +1,25 @@
 import { useMemo } from "react";
-import { alternativeProfitOver, analyzeInvestment, type FinanceParams } from "../engine/finance";
+import {
+  alternativeProfitOver,
+  analyzeInvestment,
+  annualize,
+  type FinanceParams,
+} from "../engine/finance";
 import type { AnnualResult, BatteryParams } from "../engine/types";
 import { formatPercent, formatSek } from "../lib/format";
 import { useAppStore } from "../store/appStore";
 
 /**
- * Annualized headline figures for one result under one scenario. Datasets
- * shorter than a year are annualized (factor 8760/executedHours) for the
- * yearly figures and the finance math — clearly labeled, since seasons may
- * be unbalanced.
+ * Per-year headline figures for one result under one scenario. Datasets that
+ * are not about one year are scaled to a year (see annualize) for the yearly
+ * figures and the finance math — clearly labeled, since seasons may be
+ * unbalanced.
  */
 function scenarioFigures(result: AnnualResult, battery: BatteryParams, finance: FinanceParams) {
-  const executedHours = result.days.reduce((s, d) => s + d.executedHours, 0);
-  const partial = executedHours < 8000;
-  const factor = partial ? 8760 / executedHours : 1;
-  const annualSavings = result.executedSavings * factor;
-  const annualCycles = result.executedCycles * factor;
-  const analysis = analyzeInvestment(annualSavings, annualCycles, battery, finance);
+  const annual = annualize(result);
+  const analysis = analyzeInvestment(annual.annualSavings, annual.annualCycles, battery, finance);
   return {
-    partial,
-    days: Math.round(executedHours / 24),
-    annualSavings,
+    ...annual,
     analysis,
     net: analysis.horizonSavings - finance.systemCostSek,
   };
@@ -131,13 +130,18 @@ export function HeroStats() {
     <section aria-label="Headline results">
       <div className="grid grid-cols-1 gap-px overflow-hidden rounded-xl border border-border bg-border sm:grid-cols-3">
         <Tile
-          label={current.partial ? "Annual savings (annualized)" : "Annual savings"}
+          label={current.scaled ? "Annual savings (annualized)" : "Annual savings"}
           value={`${formatSek(current.annualSavings)}/yr`}
-          sub={
-            current.partial
-              ? `extrapolated from ${current.days} days of data`
-              : `${formatPercent(result.executedSavingsPct)} of the no-battery cost`
-          }
+          sub={[
+            current.scaled
+              ? `scaled to a year from ${current.days} days of data`
+              : `${formatPercent(result.executedSavingsPct)} of the no-battery cost`,
+            result.powerFee
+              ? `incl. ${formatSek(current.annualPowerFeeSavings)} lower effektavgift`
+              : null,
+          ]
+            .filter(Boolean)
+            .join(" · ")}
           tone={current.annualSavings > 0 ? "positive" : "negative"}
           delta={deltas?.savings}
         />
@@ -164,11 +168,11 @@ export function HeroStats() {
       </div>
       <p className="mt-2 text-xs leading-relaxed text-text-muted">
         These figures are the battery's <em>added</em> value: the same household would pay{" "}
-        {formatSek(result.executedOriginalCost)}
-        {current.partial ? ` over the ${current.days} analyzed days` : "/yr"} without a battery and{" "}
-        {formatSek(result.executedOptimizedCost)} with one, under the current market model. Changing
-        the model (e.g. selling solar) moves both bills — the tiles show only their difference,
-        which is what the battery investment buys.
+        {formatSek(current.annualOriginalCost)}/yr without a battery and{" "}
+        {formatSek(current.annualOptimizedCost)}/yr with one
+        {result.powerFee ? " (energy plus effektavgift)" : ""}, under the current market model.
+        Changing the model (e.g. selling solar) moves both bills — the tiles show only their
+        difference, which is what the battery investment buys.
       </p>
     </section>
   );

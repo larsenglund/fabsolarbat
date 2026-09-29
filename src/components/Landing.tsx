@@ -9,9 +9,9 @@ import { useAppStore } from "../store/appStore";
  * 40-75 kSEK system cost. Pinned by the golden test.
  */
 const REFERENCE = {
-  annualSavings: 3967,
+  annualSavings: 3977,
   costReduction: 15.8,
-  payback: "11–24 yr",
+  payback: "11–23 yr",
 };
 
 export function Landing() {

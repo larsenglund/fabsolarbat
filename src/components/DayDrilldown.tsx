@@ -1,4 +1,5 @@
 import { type KeyboardEvent, useEffect, useMemo, useRef } from "react";
+import { getPowerTariff } from "../engine/powerTariff";
 import { bestWorstDays } from "../lib/days";
 import { formatSek } from "../lib/format";
 import { useAppStore } from "../store/appStore";
@@ -20,6 +21,7 @@ export function DayDrilldown() {
   const result = useAppStore((s) => s.result);
   const selected = useAppStore((s) => s.selectedDay);
   const selectDay = useAppStore((s) => s.selectDay);
+  const powerTariff = getPowerTariff(useAppStore((s) => s.params.tariff.powerTariff));
 
   const bestWorst = useMemo(() => (result ? bestWorstDays(result) : null), [result]);
 
@@ -234,6 +236,11 @@ export function DayDrilldown() {
               <th className="px-2 font-normal">B→H</th>
               <th className="px-2 font-normal">G→H</th>
               <th className="px-2 font-normal">Exp</th>
+              {powerTariff && (
+                <th className="px-2 font-normal" title="Total grid draw (G→H + G→B), in kW">
+                  Grid
+                </th>
+              )}
               <th className="pl-2 font-normal">Cost</th>
             </tr>
           </thead>
@@ -253,6 +260,18 @@ export function DayDrilldown() {
                 <td className="px-2">{h.batteryToHome.toFixed(2)}</td>
                 <td className="px-2">{(h.consumptionKwh - h.batteryToHome).toFixed(2)}</td>
                 <td className="px-2">{h.exportKwh.toFixed(2)}</td>
+                {powerTariff && (
+                  <td
+                    className={`px-2 ${powerTariff.hourWeight(h.t) > 0 ? "font-semibold" : "text-text-muted"}`}
+                    title={
+                      powerTariff.hourWeight(h.t) > 0
+                        ? "Measured for the effektavgift"
+                        : "Not measured for the effektavgift"
+                    }
+                  >
+                    {h.gridConsumption.toFixed(2)}
+                  </td>
+                )}
                 <td className="pl-2">{h.cost.toFixed(2)}</td>
               </tr>
             ))}

@@ -40,3 +40,11 @@ test("analysis view has no serious a11y violations", async ({ page }) => {
   await expect(hero.getByText(/kr\/yr/).first()).toBeVisible({ timeout: 90_000 });
   await expectNoSeriousViolations(page);
 });
+
+test("analysis view with a power tariff has no serious a11y violations", async ({ page }) => {
+  await page.goto("/?d=sample&pt=fev-2025");
+  const panel = page.getByRole("region", { name: "Effektavgift per month" });
+  await expect(panel).toBeVisible({ timeout: 90_000 });
+  await panel.getByRole("button", { name: "Show peak hours" }).click();
+  await expectNoSeriousViolations(page);
+});

@@ -12,6 +12,7 @@ Each simulated day at 13:00 (when Nord Pool publishes tomorrow's hourly prices) 
 
 - **Headline answers:** annual savings, payback time, 10-year net result vs putting the money in an index fund — with honest accounting (every hour counted once, degradation included)
 - **Two market models:** excess solar wasted (no export contract) or sold at spot + export bonus. Sweden's abolished 60 öre/kWh skattereduktion is deliberately not included
+- **Peak-power tariffs (effektavgift):** pick your grid operator's power tariff and the optimizer shaves the measured peaks alongside price arbitrage; the monthly fee is then billed exactly as the operator would, with and without the battery. Currently available: Falu Energi & Vatten (75 kr/kW·month Nov–Mar on the mean of the three highest weekday 07–19 hours, on different days)
 - **Drill all the way down:** monthly savings, a zoomable full-year hourly explorer, and an hour-by-hour dispatch table for any day
 - **Your own data:** upload a merged CSV, a Swedish grid-operator export, or ENTSO-E prices with currency conversion — clear format examples and downloadable templates are shown on the upload page. Data is parsed and stored only in your browser, with a "Remove my data" control
 - **Compare & share:** pin any result as a baseline and watch the deltas as you tweak parameters; every scenario is encoded in the URL, so copying the link shares your exact settings (parameters only — never your data)
@@ -19,7 +20,7 @@ Each simulated day at 13:00 (when Nord Pool publishes tomorrow's hourly prices) 
 ## FAQ
 
 **Why are these numbers so much lower than vendor calculations?**
-Three honest choices: (1) the strategy is *optimal*, so real-world results can only be worse, never better; (2) savings are counted against what you would actually have paid, including the hours the battery does nothing; (3) degradation and efficiency losses are modeled. Also note the original Python analysis this tool grew from accidentally double-counted overlapping planning windows (~2× inflation) — the corrected reference figure is ~3 967 kr/yr for the sample household, not 8 300.
+Three honest choices: (1) the strategy is *optimal*, so real-world results can only be worse, never better; (2) savings are counted against what you would actually have paid, including the hours the battery does nothing; (3) degradation and efficiency losses are modeled. Also note the original Python analysis this tool grew from accidentally double-counted overlapping planning windows (~2× inflation) — the corrected reference figure is ~3 977 kr/yr for the sample household, not 8 300.
 
 **Why does selling solar make the battery look *less* profitable?**
 Because the no-battery baseline improves too. When exports earn money, the battery's solar charging has a real opportunity cost (the sale you gave up), so the battery's *added* value shrinks even though your total bill goes down. The "How it works" page in the app walks through this with numbers.

@@ -38,6 +38,7 @@ describe("fullPricePerKwh", () => {
         transferFeeSekPerKwh: 0.5,
         fixedMarkupSekPerKwh: 0.1,
         sellBonusSekPerKwh: 0,
+        powerTariff: null,
       }),
     ).toBeCloseTo(1.85, 12);
   });

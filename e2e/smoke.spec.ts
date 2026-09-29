@@ -7,7 +7,7 @@ test("landing page renders with title, heading and reference stats", async ({ pa
   await expect(page.getByRole("heading", { level: 1 })).toContainText("home battery");
 
   // Stat tiles exercise the formatting helpers end-to-end.
-  await expect(page.getByText("3 967 kr/yr")).toBeVisible();
+  await expect(page.getByText("3 977 kr/yr")).toBeVisible();
   await expect(page.getByText("15,8 %")).toBeVisible();
 
   await expect(page.getByRole("link", { name: "GitHub ↗" })).toBeVisible();
@@ -20,7 +20,7 @@ test("sample analysis runs end-to-end in the browser (wasm worker)", async ({ pa
   // The worker fetches the HiGHS wasm and simulates the full year: the hero
   // tile must eventually show the golden-pinned headline savings.
   const hero = page.getByLabel("Headline results");
-  await expect(hero.getByText(/3\u00a0967\u00a0kr\/yr/)).toBeVisible({ timeout: 90_000 });
+  await expect(hero.getByText(/3\u00a0977\u00a0kr\/yr/)).toBeVisible({ timeout: 90_000 });
 
   await expect(page.getByRole("heading", { name: "Savings per month" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Hourly explorer" })).toBeVisible();
@@ -32,9 +32,9 @@ test("sample analysis runs end-to-end in the browser (wasm worker)", async ({ pa
   await expect(page.getByRole("cell", { name: "13:00" }).first()).toBeVisible();
 
   // Switching to sell-at-spot re-runs with export revenue priced in: the
-  // battery is worth less (golden-pinned 3 016 kr/yr).
+  // battery is worth less (golden-pinned 3 024 kr/yr).
   await page.getByLabel("Excess solar", { exact: true }).selectOption("sell-at-spot");
-  await expect(hero.getByText(/3\u00a0016\u00a0kr\/yr/)).toBeVisible({ timeout: 90_000 });
+  await expect(hero.getByText(/3\u00a0024\u00a0kr\/yr/)).toBeVisible({ timeout: 90_000 });
 
   // The dataset chip returns to the landing page, where other data can be
   // chosen; re-entering the sample keeps the loaded dataset.
@@ -75,7 +75,7 @@ test("upload: merged file reproduces the sample results exactly", async ({ page 
 
   // Same data + same defaults => the golden-pinned headline.
   const hero = page.getByLabel("Headline results");
-  await expect(hero.getByText(/3\u00a0967\u00a0kr\/yr/)).toBeVisible({ timeout: 90_000 });
+  await expect(hero.getByText(/3\u00a0977\u00a0kr\/yr/)).toBeVisible({ timeout: 90_000 });
 });
 
 test("upload: separate energy + price fixtures merge and analyze", async ({ page }) => {
@@ -98,11 +98,11 @@ test("shared link opens the sample analysis with the scenario applied", async ({
   await page.goto("/?d=sample&mdl=sell");
   await expect(page.getByText(/Sell-at-spot model/)).toBeVisible();
   const hero = page.getByLabel("Headline results");
-  await expect(hero.getByText(/3 016 kr\/yr/)).toBeVisible({ timeout: 90_000 });
+  await expect(hero.getByText(/3 024 kr\/yr/)).toBeVisible({ timeout: 90_000 });
 
   // The address bar tracks the scenario: reverting the model drops its key.
   await page.getByLabel("Excess solar", { exact: true }).selectOption("no-sell");
-  await expect(hero.getByText(/3 967 kr\/yr/)).toBeVisible({ timeout: 90_000 });
+  await expect(hero.getByText(/3 977 kr\/yr/)).toBeVisible({ timeout: 90_000 });
   expect(page.url()).not.toContain("mdl=");
   expect(page.url()).toContain("d=sample");
   await expect(page.getByRole("button", { name: "Copy link" })).toBeVisible();
@@ -111,14 +111,14 @@ test("shared link opens the sample analysis with the scenario applied", async ({
 test("baseline pin shows deltas as parameters change", async ({ page }) => {
   await page.goto("/?d=sample");
   const hero = page.getByLabel("Headline results");
-  await expect(hero.getByText(/3 967 kr\/yr/)).toBeVisible({ timeout: 90_000 });
+  await expect(hero.getByText(/3 977 kr\/yr/)).toBeVisible({ timeout: 90_000 });
 
   await page.getByRole("button", { name: "Pin baseline" }).click();
   await expect(page.getByRole("button", { name: /Baseline pinned/ })).toBeVisible();
 
   // Switching to sell-at-spot shrinks the battery's value vs the pinned run.
   await page.getByLabel("Excess solar", { exact: true }).selectOption("sell-at-spot");
-  await expect(hero.getByText(/3 016 kr\/yr/)).toBeVisible({ timeout: 90_000 });
+  await expect(hero.getByText(/3 024 kr\/yr/)).toBeVisible({ timeout: 90_000 });
   await expect(hero.getByText(/vs baseline/).first()).toBeVisible();
 
   await page.getByRole("button", { name: /Baseline pinned/ }).click();
@@ -176,4 +176,26 @@ test("upload: a malformed file gets a readable error", async ({ page }) => {
   });
   await expect(page.getByRole("alert")).toBeVisible();
   await expect(page.getByRole("button", { name: "Analyze this dataset" })).toBeDisabled();
+});
+
+test("effektavgift: FEV's power tariff adds peak-shaving savings", async ({ page }) => {
+  await page.goto("/?d=sample&pt=fev-2025");
+  await expect(page.getByText("effektavgift: Falu Energi & Vatten")).toBeVisible();
+  const hero = page.getByLabel("Headline results");
+  // Golden-pinned: 5 273 kr/yr, of which 1 478 kr lower effektavgift.
+  await expect(hero.getByText(/5 273 kr\/yr/)).toBeVisible({ timeout: 90_000 });
+  await expect(hero.getByText(/incl\. 1 478 kr lower effektavgift/)).toBeVisible();
+
+  const panel = page.getByRole("region", { name: "Effektavgift per month" });
+  await expect(panel.getByRole("cell", { name: "2024-02" })).toBeVisible();
+  await expect(panel.getByRole("cell", { name: "1 478 kr" })).toBeVisible();
+
+  // One click adopts the operator's per-kWh fee; turning the tariff off
+  // drops it from the link again.
+  await page.getByRole("button", { name: /per-kWh fee as grid transfer fee/ }).click();
+  await expect(page.getByLabel("Grid transfer fee value")).toHaveValue("0.5625");
+  await page.getByLabel("Power tariff (effektavgift)", { exact: true }).selectOption("none");
+  await expect(page.getByText("no effektavgift")).toBeVisible();
+  await expect(panel).toBeHidden();
+  expect(page.url()).not.toContain("pt=");
 });

@@ -98,7 +98,8 @@ interface ScenarioParams {
     transferFeeSekPerKwh: number;   // default 0.685 (incl. VAT)
     fixedMarkupSekPerKwh: number;   // default 0 (retailer påslag)
     sellBonusSekPerKwh: number;     // default 0.05 (natnytta; 60 ore skattereduktion abolished)
-    // v2: time-of-use transfer fees, effekttariff (peak-power fee per month)
+    powerTariff: PowerTariffId | null; // effektavgift preset (src/engine/powerTariff.ts), default none
+    // v2: time-of-use transfer fees
   };
   strategy: {
     model: 'no-sell' | 'sell-at-spot';   // sell: export earns spot + sellBonus (skattereduktion abolished)
@@ -130,6 +131,8 @@ Constraints (per hour):
 4. `b2h[t] ≤ consumption[t]` (battery only offsets load; no export from battery in v1)
 5. SoC bounds: `minSoc ≤ soc[t] ≤ max(maxSoc, initialSoc)` — the ceiling admits charge carried from yesterday when degradation has shrunk today's maxSoc below it (the Python original was silently infeasible here)
 6. Terminal condition: `soc[T] ≥ initialSoc` is **not** imposed (matches Python); instead SoC at hour 24 carries to next day's window, which naturally values stored energy.
+
+**Power tariff (effektavgift), optional.** A tariff preset declares which hours are measured (weight per hour), how many peaks per month are averaged, whether only one per day counts, and the price per kW per month. The LP then also minimizes Σ_m price_m · topN_m/N, where topN_m — the sum of the month's N largest measured samples, i.e. the window's day/hour peaks of grid draw `consumption − b2h + g2b` together with the month's already-executed peaks carried in from earlier windows — is LP-representable as min_{u≥0} N·u + Σ max(0, x_i − u). After the run the monthly bill is recomputed exactly from the executed hourly grid draw, with and without the battery, and the difference joins the savings.
 
 NOT modeled (matching the Python original): a house main-fuse grid-draw cap — the optimizer can schedule grid draw above a real connection's limit in the cheapest hours; a `house.maxGridKw` constraint is a v2 candidate.
 

@@ -1,4 +1,5 @@
 import { DEFAULT_FINANCE, type FinanceParams } from "./engine/finance";
+import { POWER_TARIFF_IDS, type PowerTariffId } from "./engine/powerTariff";
 import {
   DEFAULT_PARAMS,
   type EngineParams,
@@ -211,6 +212,9 @@ const FORECAST_CODES = new Set([
   "actual",
 ]);
 
+/** Power tariffs encode by id; absent = none (the default). */
+const POWER_TARIFF_CODES = new Set<string>(POWER_TARIFF_IDS);
+
 /** Trim float noise from UI step arithmetic without losing real precision. */
 function fmt(v: number): string {
   return String(Math.round(v * 1e6) / 1e6);
@@ -233,6 +237,9 @@ export function encodeScenario(
   }
   const fc = params.strategy.solarForecast ?? "actual";
   if (fc !== DEFAULT_PARAMS.strategy.solarForecast) q.set("fc", fc);
+  if (params.tariff.powerTariff !== DEFAULT_PARAMS.tariff.powerTariff) {
+    q.set("pt", params.tariff.powerTariff ?? "none");
+  }
   for (const f of NUM_FIELDS) {
     const v = f.get(params, finance);
     if (v !== f.get(DEFAULT_PARAMS, DEFAULT_FINANCE)) q.set(f.key, fmt(v));
@@ -262,6 +269,11 @@ export function decodeScenario(search: string): DecodedScenario {
   const fc = q.get("fc");
   if (fc && FORECAST_CODES.has(fc)) {
     params.strategy.solarForecast = fc === "actual" ? null : (fc as SolarForecastMethod);
+    hasScenario = true;
+  }
+  const pt = q.get("pt");
+  if (pt && (pt === "none" || POWER_TARIFF_CODES.has(pt))) {
+    params.tariff.powerTariff = pt === "none" ? null : (pt as PowerTariffId);
     hasScenario = true;
   }
   for (const f of NUM_FIELDS) {

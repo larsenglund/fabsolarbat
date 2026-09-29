@@ -32,6 +32,7 @@ describe("URL scenario codec", () => {
       transferFeeSekPerKwh: 0.5,
       fixedMarkupSekPerKwh: 0.06,
       sellBonusSekPerKwh: 0.08,
+      powerTariff: "fev-2025",
     };
     params.strategy = {
       model: "sell-at-spot",

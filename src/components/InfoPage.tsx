@@ -143,29 +143,51 @@ export function InfoPage() {
             <tbody>
               <tr className="border-b border-border/50">
                 <td className="py-1.5 pr-3">Without battery</td>
-                <td className="px-3 py-1.5">25 164 kr</td>
-                <td className="px-3 py-1.5">22 347 kr</td>
+                <td className="px-3 py-1.5">25 210 kr</td>
+                <td className="px-3 py-1.5">22 397 kr</td>
               </tr>
               <tr className="border-b border-border/50">
                 <td className="py-1.5 pr-3">With battery</td>
-                <td className="px-3 py-1.5">21 197 kr</td>
-                <td className="px-3 py-1.5">19 331 kr</td>
+                <td className="px-3 py-1.5">21 234 kr</td>
+                <td className="px-3 py-1.5">19 373 kr</td>
               </tr>
               <tr>
                 <td className="py-1.5 pr-3 font-medium text-text">Battery's added value</td>
-                <td className="px-3 py-1.5 font-medium text-text">3 967 kr/yr</td>
-                <td className="px-3 py-1.5 font-medium text-text">3 016 kr/yr</td>
+                <td className="px-3 py-1.5 font-medium text-text">3 977 kr/yr</td>
+                <td className="px-3 py-1.5 font-medium text-text">3 024 kr/yr</td>
               </tr>
             </tbody>
           </table>
         </div>
         <p>
           Read the columns top to bottom: the household is best off selling <em>and</em> owning a
-          battery (19 331 kr). But since you can sell solar without buying anything, the fair
+          battery (19 373 kr). But since you can sell solar without buying anything, the fair
           question for the battery is what it adds on top — and once every stored kilowatt-hour
           carries the cost of a foregone sale, its edge per solar kWh shrinks to the tax-and-fee
           wedge between buying and selling prices. The no-sell model, by pretending exports are
           worthless, quietly flatters the battery.
+        </p>
+      </Section>
+
+      <Section title="Peak-power fees (effektavgift)">
+        <p>
+          Some grid operators charge a monthly <strong>power fee</strong> on top of the per-kWh
+          transfer fee: you pay per kilowatt of your highest hourly power draw. Falu Energi &amp;
+          Vatten, for example, charges 75 kr/kW per month (incl. VAT) from November through March,
+          on the average of each month's three highest hours — on three different days — measured
+          only on weekdays between 07 and 19. A battery can lower this fee by covering the house's
+          consumption during the measured hours; it must also avoid creating new peaks when it
+          charges from the grid.
+        </p>
+        <p>
+          When you select a power tariff, the fee becomes part of the daily plan. Each day at 13:00
+          the optimizer knows which peaks the month has already recorded, so it only pays attention
+          to hours that could actually raise the bill — and weighs keeping energy in reserve for a
+          peak against using it for price arbitrage. Afterwards, the fee is calculated exactly as
+          the operator would, from the simulated hourly grid draw with and without the battery, and
+          the difference is added to the savings. Since each daily plan assumes the household's
+          consumption is known in advance, peak shaving is the part of the result most likely to be
+          optimistic: a real system can be caught out by an unexpected peak.
         </p>
       </Section>
 
@@ -183,12 +205,14 @@ export function InfoPage() {
       <Section title="What the model does not capture">
         <p>
           Honest limits, so you can judge the numbers: consumption within each planning window is
-          assumed known (real forecasts would do slightly worse) · the house's main-fuse limit is
-          not enforced, so a few high-draw hours may be optimistic · the meter data is hourly, so
-          within-hour solar-to-battery routing is approximated · degradation is linear in cycles
-          with no calendar aging · peak-power grid tariffs and time-of-use transfer fees are not
-          modeled yet · electricity prices are assumed to repeat the analyzed year. Most of these
-          nudge results in the battery's favor, so treat the output as an{" "}
+          assumed known — the biggest optimism in the model; planning on a simple forecast instead
+          cost the sample household roughly 10–20% of its savings in a test, and peak shaving is hit
+          hardest · the house's main-fuse limit is not enforced, so a few high-draw hours may be
+          optimistic · the meter data is hourly, so within-hour solar-to-battery routing is
+          approximated · degradation is linear in cycles with no calendar aging · only one
+          operator's peak-power tariff (effektavgift) is available so far, and time-of-use transfer
+          fees are not modeled · electricity prices and tariffs are assumed to repeat the analyzed
+          year. Most of these nudge results in the battery's favor, so treat the output as an{" "}
           <strong>optimistic ceiling</strong>, not a promise.
         </p>
       </Section>

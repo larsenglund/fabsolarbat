@@ -1,3 +1,4 @@
+import type { PeakLpInput } from "./powerTariff";
 import type { Highs } from "./solver";
 
 /**
@@ -22,6 +23,15 @@ import type { Highs } from "./solver";
  * Σ (fullPrice_t + penalty)·g2b_t − fullPrice_t·b2h_t + sellPrice_t·s2b_t.
  * The sellPrice·s2b term is the opportunity cost of diverting sellable solar
  * into the battery; with sellPrice ≡ 0 (no-sell) the LP is unchanged.
+ *
+ * With a power tariff (effektavgift) the objective also carries the monthly
+ * peak fee, price_m · topN_m / N, where topN_m is the sum of the N largest
+ * measured samples of month m — the window's measured days/hours (grid draw
+ * consumption_t − b2h_t + g2b_t, weighted) and the month's already-executed
+ * peaks. Using topN(x) = min_{u ≥ 0} N·u + Σ max(0, x_i − u):
+ *   pk_g ≥ floor_g,  pk_g ≥ w_t·(consumption_t − b2h_t + g2b_t)  (t in group g)
+ *   pz_g ≥ pk_g − pu_m,  ph_{m,i} ≥ history_{m,i} − pu_m,  all ≥ 0
+ *   objective += price_m·pu_m + (price_m/N)·(Σ_i ph_{m,i} + Σ_g pz_g)
  */
 export interface LpWindowInput {
   fullPrice: number[];
@@ -35,6 +45,8 @@ export interface LpWindowInput {
   maxPowerKw: number;
   efficiency: number;
   gridChargePenalty: number;
+  /** Power-tariff peak terms; omitted when no power tariff applies. */
+  peak?: PeakLpInput;
 }
 
 export interface LpWindowPlan {
@@ -81,7 +93,40 @@ export function buildLpText(input: LpWindowInput): string {
     bounds.push(`${f(input.minSoc)} <= soc_${t} <= ${f(input.maxSoc)}`);
   }
 
+  if (input.peak) addPeakTerms(input, input.peak, obj, cons, bounds);
+
   return `Minimize\n obj: ${obj.join(" ")}\nSubject To\n ${cons.join("\n ")}\nBounds\n ${bounds.join("\n ")}\nEnd\n`;
+}
+
+function addPeakTerms(
+  input: LpWindowInput,
+  peak: PeakLpInput,
+  obj: string[],
+  cons: string[],
+  bounds: string[],
+): void {
+  const n = peak.peaksPerMonth;
+  peak.groups.forEach((g, gi) => {
+    if (g.floorKw > 0) bounds.push(`pk_${gi} >= ${f(g.floorKw)}`);
+    const m = peak.months[g.month];
+    cons.push(`pz${gi}: pz_${gi} - pk_${gi} + pu_${g.month} >= 0`);
+    obj.push(term(m.priceSekPerKw / n, `pz_${gi}`));
+  });
+  for (let t = 0; t < peak.hourGroup.length; t++) {
+    const gi = peak.hourGroup[t];
+    if (gi < 0) continue;
+    const w = peak.hourWeight[t];
+    cons.push(
+      `pk${gi}_${t}: pk_${gi} + ${f(w)} b2h_${t} - ${f(w)} g2b_${t} >= ${f(w * input.consumptionKwh[t])}`,
+    );
+  }
+  peak.months.forEach((m, mi) => {
+    obj.push(term(m.priceSekPerKw, `pu_${mi}`));
+    m.history.forEach((h, i) => {
+      cons.push(`ph${mi}_${i}: ph_${mi}_${i} + pu_${mi} >= ${f(h)}`);
+      obj.push(term(m.priceSekPerKw / n, `ph_${mi}_${i}`));
+    });
+  });
 }
 
 export function solveWindow(highs: Highs, input: LpWindowInput): LpWindowPlan {

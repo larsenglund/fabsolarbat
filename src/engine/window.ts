@@ -1,6 +1,7 @@
 import { socBounds } from "./battery";
 import { fullPricePerKwh } from "./costModel";
 import { solveWindow } from "./lp";
+import type { PeakLpInput } from "./powerTariff";
 import type { Highs } from "./solver";
 import type { EngineParams, HourRecord, HourResult, WindowSummary } from "./types";
 
@@ -14,6 +15,8 @@ export interface WindowRunInput {
   params: EngineParams;
   /** True when planningSolar is an estimate — enables the execution-adjustment pass. */
   usesEstimates: boolean;
+  /** Power-tariff peak state for the LP (omitted without a power tariff). */
+  peak?: PeakLpInput;
 }
 
 export interface WindowRunResult {
@@ -59,6 +62,7 @@ export function runWindow(highs: Highs, input: WindowRunInput): WindowRunResult 
     maxPowerKw: battery.maxPowerKw,
     efficiency: eff,
     gridChargePenalty: strategy.gridChargePenaltySekPerKwh,
+    peak: input.peak,
   });
 
   const hourly: HourResult[] = [];

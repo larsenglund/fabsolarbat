@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { getPowerTariff } from "../engine/powerTariff";
 import { useAppStore } from "../store/appStore";
 
 /** Copies the current URL — which always encodes the active scenario. */
@@ -74,6 +75,7 @@ export function AssumptionsBar() {
   const forecast = useAppStore((s) => s.params.strategy.solarForecast);
   const model = useAppStore((s) => s.params.strategy.model);
   const sellBonus = useAppStore((s) => s.params.tariff.sellBonusSekPerKwh);
+  const powerTariff = getPowerTariff(useAppStore((s) => s.params.tariff.powerTariff));
 
   return (
     <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-text-muted">
@@ -84,6 +86,8 @@ export function AssumptionsBar() {
       ) : (
         <span>No-sell model (excess solar earns nothing)</span>
       )}
+      <span aria-hidden>·</span>
+      <span>{powerTariff ? `effektavgift: ${powerTariff.operator}` : "no effektavgift"}</span>
       <span aria-hidden>·</span>
       <span>{forecast ?? "perfect"} solar forecast</span>
       {meta && (

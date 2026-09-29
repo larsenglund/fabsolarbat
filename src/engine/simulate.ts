@@ -1,7 +1,15 @@
+import { getPowerTariff, monthlyPowerFees, PeakTracker } from "./powerTariff";
 import { buildForecastIndex, estimateSolar } from "./solarForecast";
 import type { Highs } from "./solver";
 import { getSolver } from "./solver";
-import type { AnnualResult, DayResult, EngineParams, HourRecord } from "./types";
+import type {
+  AnnualResult,
+  DayResult,
+  EngineParams,
+  HourRecord,
+  PowerFeeMonth,
+  PowerFeeSummary,
+} from "./types";
 import { runWindow } from "./window";
 
 const HOUR_MS = 3_600_000;
@@ -14,6 +22,14 @@ export interface SimulateOptions {
   retainHourly?: boolean;
   /** Called after each simulated day completes. */
   onProgress?: (dayNumber: number, totalDays: number) => void;
+  /**
+   * Reproduce the original Python driver's bookkeeping exactly, for the
+   * golden-file validation of the LP port only: battery cycles (degradation)
+   * counted over the whole 35 h window instead of the executed hours, SoC
+   * handed over at window hour 23 even when a window executes 23 h (DST),
+   * and the last window that fits the data dropped by an off-by-one.
+   */
+  pythonParity?: boolean;
 }
 
 /**
@@ -79,7 +95,8 @@ export function simulateYearSync(
   const firstOpt = hours.find((r) => r.hour === planningHour);
   if (!firstOpt) throw new Error(`No row at planning hour ${planningHour} in dataset`);
   const dataEnd = hours[hours.length - 1].t;
-  const lastOptTime = dataEnd - windowHours * HOUR_MS;
+  // A window starting at lastOptTime ends exactly on the last data row.
+  const lastOptTime = dataEnd - (windowHours - (options.pythonParity ? 0 : 1)) * HOUR_MS;
   const totalDays = Math.floor((lastOptTime - firstOpt.t) / DAY_MS) + 1;
 
   // Determine all simulated window starts up front so executed-hours
@@ -101,6 +118,15 @@ export function simulateYearSync(
   let currentSoc = options.initialSoc ?? 0;
   let totalCycles = 0;
 
+  // Power tariff: the tracker feeds each window's LP with the month's
+  // already-executed peaks; the executed grid draw (with and without the
+  // battery) is kept for the exact monthly fee accounting at the end.
+  const powerTariff = getPowerTariff(params.tariff.powerTariff);
+  const peakTracker = powerTariff ? new PeakTracker(powerTariff) : null;
+  const executedTimes: number[] = [];
+  const executedBaselineGrid: number[] = [];
+  const executedBatteryGrid: number[] = [];
+
   for (let k = 0; k < starts.length; k++) {
     const { time, startIdx, dayNumber } = starts[k];
 
@@ -120,6 +146,7 @@ export function simulateYearSync(
         cyclesCompleted: totalCycles,
         params,
         usesEstimates,
+        peak: peakTracker?.windowInput(rows.map((r) => r.t)),
       }));
     } catch (err) {
       throw new Error(
@@ -128,13 +155,6 @@ export function simulateYearSync(
         { cause: err },
       );
     }
-
-    const dailyCycles =
-      params.battery.usableCapacityKwh > 0
-        ? summary.totalBatteryToHome / params.battery.usableCapacityKwh
-        : 0;
-    totalCycles += dailyCycles;
-    currentSoc = hourly.length >= 24 ? hourly[23].soc : summary.finalSoc;
 
     // Executed-hours accounting: this window only governs reality until the
     // next simulated window starts (normally 24 rows later; 23 across the
@@ -149,9 +169,29 @@ export function simulateYearSync(
     let executedOptimizedCost = 0;
     let executedBatteryToHome = 0;
     for (let i = 0; i < executedHours; i++) {
-      executedOriginalCost += hourly[i].baselineCost;
-      executedOptimizedCost += hourly[i].cost;
-      executedBatteryToHome += hourly[i].batteryToHome;
+      const h = hourly[i];
+      executedOriginalCost += h.baselineCost;
+      executedOptimizedCost += h.cost;
+      executedBatteryToHome += h.batteryToHome;
+      if (peakTracker) {
+        peakTracker.record(h.t, h.gridConsumption);
+        executedTimes.push(h.t);
+        executedBaselineGrid.push(h.consumptionKwh);
+        executedBatteryGrid.push(h.gridConsumption);
+      }
+    }
+
+    // Degradation follows the energy actually delivered: only the executed
+    // hours (the plan's tail is re-planned, never run). The SoC handed to the
+    // next window is the one at its start — after the last executed hour.
+    const cap = params.battery.usableCapacityKwh;
+    const dailyCycles = cap > 0 ? summary.totalBatteryToHome / cap : 0;
+    if (options.pythonParity) {
+      totalCycles += dailyCycles;
+      currentSoc = hourly.length >= 24 ? hourly[23].soc : summary.finalSoc;
+    } else {
+      totalCycles += cap > 0 ? executedBatteryToHome / cap : 0;
+      currentSoc = hourly[executedHours - 1].soc;
     }
 
     let minPrice = Number.POSITIVE_INFINITY;
@@ -198,10 +238,44 @@ export function simulateYearSync(
   const totalOriginalCost = days.reduce((s, d) => s + d.originalCost, 0);
   const totalOptimizedCost = days.reduce((s, d) => s + d.optimizedCost, 0);
   const totalSavings = totalOriginalCost - totalOptimizedCost;
-  const executedOriginalCost = days.reduce((s, d) => s + d.executedOriginalCost, 0);
-  const executedOptimizedCost = days.reduce((s, d) => s + d.executedOptimizedCost, 0);
-  const executedSavings = executedOriginalCost - executedOptimizedCost;
+  const executedEnergyOriginal = days.reduce((s, d) => s + d.executedOriginalCost, 0);
+  const executedEnergyOptimized = days.reduce((s, d) => s + d.executedOptimizedCost, 0);
   const executedDischarge = days.reduce((s, d) => s + d.executedBatteryToHome, 0);
+
+  let powerFee: PowerFeeSummary | null = null;
+  if (powerTariff) {
+    const baseline = monthlyPowerFees(powerTariff, executedTimes, executedBaselineGrid);
+    const battery = monthlyPowerFees(powerTariff, executedTimes, executedBatteryGrid);
+    // Both series share the same hours, hence the same months in the same order.
+    const months: PowerFeeMonth[] = baseline.map((b, i) => {
+      const o = battery[i];
+      return {
+        monthKey: b.monthKey,
+        month: (b.monthKey % 12) + 1,
+        priceSekPerKw: b.priceSekPerKw,
+        baselineKw: b.billedKw,
+        optimizedKw: o.billedKw,
+        baselineFee: b.feeSek,
+        optimizedFee: o.feeSek,
+        savings: b.feeSek - o.feeSek,
+        baselinePeaks: b.peaks,
+        optimizedPeaks: o.peaks,
+      };
+    });
+    const baselineFee = months.reduce((s, m) => s + m.baselineFee, 0);
+    const optimizedFee = months.reduce((s, m) => s + m.optimizedFee, 0);
+    powerFee = {
+      tariffId: powerTariff.id,
+      months,
+      baselineFee,
+      optimizedFee,
+      savings: baselineFee - optimizedFee,
+    };
+  }
+
+  const executedOriginalCost = executedEnergyOriginal + (powerFee?.baselineFee ?? 0);
+  const executedOptimizedCost = executedEnergyOptimized + (powerFee?.optimizedFee ?? 0);
+  const executedSavings = executedOriginalCost - executedOptimizedCost;
 
   return {
     days,
@@ -215,6 +289,9 @@ export function simulateYearSync(
     executedSavings,
     executedSavingsPct:
       executedOriginalCost > 0 ? (executedSavings / executedOriginalCost) * 100 : 0,
+    executedEnergySavings: executedEnergyOriginal - executedEnergyOptimized,
+    powerFee,
+    executedHours: days.reduce((s, d) => s + d.executedHours, 0),
     executedCycles:
       params.battery.usableCapacityKwh > 0
         ? executedDischarge / params.battery.usableCapacityKwh
