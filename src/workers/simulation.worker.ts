@@ -1,4 +1,4 @@
-import { simulateYear } from "../engine/simulate";
+import { simulateScenario } from "../engine/simulate";
 import type { AnnualResult, EngineParams, HourRecord } from "../engine/types";
 
 /**
@@ -24,7 +24,7 @@ addEventListener("message", async (event: MessageEvent<RunMessage>) => {
   const { id, hours, params } = event.data;
   try {
     let lastPosted = 0;
-    const result = await simulateYear(hours, {
+    const result = await simulateScenario(hours, {
       params,
       retainHourly: true,
       onProgress: (day, totalDays) => {

@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { annualize, yearlySavings } from "../engine/finance";
-import { formatSek } from "../lib/format";
+import { formatPercent, formatSek } from "../lib/format";
 import { useAppStore } from "../store/appStore";
 
 /**
@@ -18,7 +18,13 @@ export function ProjectionChart() {
     // Same per-year figures as the headline tiles (scaled when the dataset
     // isn't one year long).
     const { annualSavings, annualCycles } = annualize(result);
-    const series = yearlySavings(annualSavings, annualCycles, battery, years);
+    const series = yearlySavings(
+      annualSavings,
+      annualCycles,
+      battery,
+      years,
+      result.capacitySensitivity,
+    );
     const cumulative: number[] = [0];
     for (const s of series) cumulative.push(cumulative[cumulative.length - 1] + s);
     const fund: number[] = [];
@@ -28,7 +34,8 @@ export function ProjectionChart() {
     return { cumulative, fund, years };
   }, [result, finance, battery]);
 
-  if (!data) return null;
+  if (!data || !result) return null;
+  const sensitivity = result.capacitySensitivity;
 
   const W = 560;
   const H = 180;
@@ -110,6 +117,17 @@ export function ProjectionChart() {
           index fund profit
         </span>
       </div>
+      <p className="mt-2 text-xs leading-relaxed text-text-muted">
+        {sensitivity
+          ? `Capacity fades with use. Re-simulating the year at ${formatPercent(
+              sensitivity.reducedFactor * 100,
+              0,
+            )} capacity (end of life) keeps ${formatPercent(
+              sensitivity.reducedSavingsRatio * 100,
+              0,
+            )} of the savings, and later years follow that measured line.`
+          : "Capacity fades with use; later years' savings are scaled down in proportion."}
+      </p>
     </div>
   );
 }

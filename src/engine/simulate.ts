@@ -1,9 +1,11 @@
+import { annualize } from "./finance";
 import { getPowerTariff, monthlyPowerFees, PeakTracker } from "./powerTariff";
 import { buildForecastIndex, estimateSolar } from "./solarForecast";
 import type { Highs } from "./solver";
 import { getSolver } from "./solver";
 import type {
   AnnualResult,
+  CapacitySensitivity,
   DayResult,
   EngineParams,
   HourRecord,
@@ -50,6 +52,72 @@ export async function simulateYear(
 ): Promise<AnnualResult> {
   const highs = await getSolver();
   return simulateYearSync(highs, hours, options);
+}
+
+/**
+ * The app's full run: the year as simulated, plus a second pass over the same
+ * year with the battery at its end-of-life capacity (no further fade), which
+ * tells the multi-year projection how much savings actually drop as capacity
+ * fades — instead of assuming they drop in proportion. Progress spans both
+ * passes.
+ */
+export async function simulateScenario(
+  hours: HourRecord[],
+  options: SimulateOptions,
+): Promise<AnnualResult> {
+  const highs = await getSolver();
+  const { params, onProgress } = options;
+  const battery = params.battery;
+  const reducedFactor = battery.eolCapacityPercent / 100;
+  // Without meaningful fade the projection is flat anyway — skip the pass.
+  const measure = battery.usableCapacityKwh > 0 && reducedFactor <= 0.97;
+  const passes = measure ? 2 : 1;
+
+  const main = simulateYearSync(highs, hours, {
+    ...options,
+    onProgress: onProgress && ((day, total) => onProgress(day, total * passes)),
+  });
+  if (!measure) return { ...main, capacitySensitivity: null };
+
+  const reduced = simulateYearSync(highs, hours, {
+    ...options,
+    retainHourly: false,
+    params: {
+      ...params,
+      // Same power, efficiency and SoC limits; only the energy shrinks. An
+      // EOL of 100% holds the capacity fixed through the year.
+      battery: {
+        ...battery,
+        usableCapacityKwh: battery.usableCapacityKwh * reducedFactor,
+        eolCapacityPercent: 100,
+      },
+    },
+    onProgress: onProgress && ((day, total) => onProgress(total + day, total * 2)),
+  });
+  return { ...main, capacitySensitivity: capacitySensitivity(main, reduced, reducedFactor) };
+}
+
+function capacitySensitivity(
+  main: AnnualResult,
+  reduced: AnnualResult,
+  reducedFactor: number,
+): CapacitySensitivity | null {
+  const mainSavings = annualize(main).annualSavings;
+  if (!(mainSavings > 0)) return null; // no savings to scale
+  let hours = 0;
+  let weighted = 0;
+  for (const d of main.days) {
+    hours += d.executedHours;
+    weighted += d.capacityFactor * d.executedHours;
+  }
+  const referenceFactor = hours > 0 ? weighted / hours : 1;
+  if (referenceFactor - reducedFactor < 0.01) return null;
+  const ratio = annualize(reduced).annualSavings / mainSavings;
+  return {
+    referenceFactor,
+    reducedFactor,
+    reducedSavingsRatio: Math.min(1, Math.max(0, ratio)),
+  };
 }
 
 /**

@@ -11,7 +11,7 @@ import { useAppStore } from "../store/appStore";
 const REFERENCE = {
   annualSavings: 3977,
   costReduction: 15.8,
-  payback: "11–23 yr",
+  payback: "11–21 yr",
 };
 
 export function Landing() {

@@ -1,13 +1,16 @@
-import type { AnnualResult, BatteryParams } from "./types";
+import type { AnnualResult, BatteryParams, CapacitySensitivity } from "./types";
 
 /**
- * Investment math, ported from the Python annual summary. One coherent
- * convention throughout: year 1 uses the actually-simulated savings, which
- * already include year 1's degradation; later years scale them by the ratio
- * of that year's average capacity factor to year 1's (scaling by the absolute
- * factor, as the Python projection did, would charge year 1's fade twice).
- * Past EOL the linear degradation continues at the same per-cycle rate,
- * floored at 10% capacity.
+ * Investment math, ported from the Python annual summary. Year 1 uses the
+ * actually-simulated savings, which already include year 1's degradation.
+ * Later years follow the battery's average capacity factor that year, mapped
+ * to savings by the measured capacity sensitivity (a second simulation of
+ * the same year at end-of-life capacity — see simulateScenario): savings
+ * fall along the straight line through (year-1 capacity, year-1 savings) and
+ * (reduced capacity, reduced savings), extended beyond it and floored at 0.
+ * Without a measurement they fall in proportion to capacity (the Python
+ * projection's assumption, which overstates the loss). Past EOL the linear
+ * degradation continues at the same per-cycle rate, floored at 10% capacity.
  */
 
 export interface FinanceParams {
@@ -85,16 +88,32 @@ export function projectedCapacityFactor(cycles: number, battery: BatteryParams):
 }
 
 /**
+ * Year-1 savings multiplier at a capacity factor: 1 at year 1's own average
+ * capacity, along the measured sensitivity line (or proportional without
+ * one), never negative.
+ */
+export function savingsMultiplier(
+  capacityFactor: number,
+  year1Factor: number,
+  sensitivity?: CapacitySensitivity | null,
+): number {
+  if (!sensitivity) return capacityFactor / year1Factor;
+  const { referenceFactor, reducedFactor, reducedSavingsRatio } = sensitivity;
+  const lossPerUnit = (1 - reducedSavingsRatio) / (referenceFactor - reducedFactor);
+  return Math.max(0, 1 - (referenceFactor - capacityFactor) * lossPerUnit);
+}
+
+/**
  * Savings per year for `years` years. Year 1 is the simulated actual; year y
- * scales it by the average capacity factor between cycle counts (y−1)·c and
- * y·c, relative to year 1's average (0 → c), whose fade the simulation
- * already includes.
+ * applies savingsMultiplier to the average capacity factor between cycle
+ * counts (y−1)·c and y·c.
  */
 export function yearlySavings(
   simulatedAnnualSavings: number,
   cyclesPerYear: number,
   battery: BatteryParams,
   years: number,
+  sensitivity?: CapacitySensitivity | null,
 ): number[] {
   const avgFactor = (y: number) =>
     (projectedCapacityFactor((y - 1) * cyclesPerYear, battery) +
@@ -103,7 +122,11 @@ export function yearlySavings(
   const year1 = avgFactor(1);
   const series: number[] = [];
   for (let y = 1; y <= years; y++) {
-    series.push(y === 1 ? simulatedAnnualSavings : (simulatedAnnualSavings * avgFactor(y)) / year1);
+    series.push(
+      y === 1
+        ? simulatedAnnualSavings
+        : simulatedAnnualSavings * savingsMultiplier(avgFactor(y), year1, sensitivity),
+    );
   }
   return series;
 }
@@ -131,9 +154,16 @@ export function analyzeInvestment(
   cyclesPerYear: number,
   battery: BatteryParams,
   finance: FinanceParams,
+  sensitivity?: CapacitySensitivity | null,
 ): InvestmentAnalysis {
   const MAX_PAYBACK_YEARS = 40;
-  const long = yearlySavings(simulatedAnnualSavings, cyclesPerYear, battery, MAX_PAYBACK_YEARS);
+  const long = yearlySavings(
+    simulatedAnnualSavings,
+    cyclesPerYear,
+    battery,
+    MAX_PAYBACK_YEARS,
+    sensitivity,
+  );
   const horizon = long.slice(0, finance.horizonYears);
 
   let paybackYears: number | null = null;

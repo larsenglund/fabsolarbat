@@ -17,7 +17,13 @@ import { useAppStore } from "../store/appStore";
  */
 function scenarioFigures(result: AnnualResult, battery: BatteryParams, finance: FinanceParams) {
   const annual = annualize(result);
-  const analysis = analyzeInvestment(annual.annualSavings, annual.annualCycles, battery, finance);
+  const analysis = analyzeInvestment(
+    annual.annualSavings,
+    annual.annualCycles,
+    battery,
+    finance,
+    result.capacitySensitivity,
+  );
   return {
     ...annual,
     analysis,

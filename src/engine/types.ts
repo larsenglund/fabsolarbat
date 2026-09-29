@@ -237,6 +237,22 @@ export interface PowerFeeSummary {
   savings: number;
 }
 
+/**
+ * How savings respond to capacity fade, measured by simulating the same year
+ * a second time with a smaller battery (same power, efficiency and limits).
+ * Savings are far less sensitive than capacity: most days the battery is
+ * limited by price spreads, power or consumption, not by its size, so the
+ * capacity lost first is the least valuable.
+ */
+export interface CapacitySensitivity {
+  /** Average capacity factor behind the main run's savings (in-year fade included). */
+  referenceFactor: number;
+  /** Capacity factor of the re-simulated battery (its end-of-life capacity). */
+  reducedFactor: number;
+  /** Savings of the reduced run as a fraction of the main run's, clamped to [0, 1]. */
+  reducedSavingsRatio: number;
+}
+
 export interface AnnualResult {
   days: DayResult[];
   /**
@@ -264,6 +280,8 @@ export interface AnnualResult {
   powerFee: PowerFeeSummary | null;
   /** Executed calendar hours (Σ days' executedHours). */
   executedHours: number;
+  /** Set by simulateScenario (the app's run); absent from a bare simulateYear. */
+  capacitySensitivity?: CapacitySensitivity | null;
   /** Cycles from executed discharge only — use this for finance projections. */
   executedCycles: number;
 }

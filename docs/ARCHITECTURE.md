@@ -138,7 +138,7 @@ NOT modeled (matching the Python original): a house main-fuse grid-draw cap — 
 
 **Accounting: windowed vs. executed.** Consecutive windows overlap by 11 h, and only a window's first 24 h are actually executed (the tail is re-planned the next day). Per-day results therefore carry two sets of figures: window-summed metrics (Python-parity, inflated ~1.5× when summed annually — used only by the golden tests) and `executed*` metrics that count every simulated hour exactly once — **all user-facing aggregates use the executed figures**, including cycles fed to the finance projection.
 
-Degradation: effective capacity = `usableCapacity · (1 − (1 − eol%) · cycles/cyclesToEol)`, cycles accumulated as `Σ b2h / usableCapacity`, linear continuation past EOL (floor 10%) — identical to the Python projection.
+Degradation: effective capacity = `usableCapacity · (1 − (1 − eol%) · cycles/cyclesToEol)`, cycles accumulated as `Σ b2h / usableCapacity` over executed hours, linear continuation past EOL (floor 10%). The multi-year projection does not assume savings proportional to capacity: `simulateScenario` re-simulates the year at end-of-life capacity (same power and limits), and later years follow the straight line through the two (capacity, savings) points.
 
 ### Execution model
 

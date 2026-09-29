@@ -117,7 +117,12 @@ export function InfoPage() {
           overlap and roughly <strong>doubles</strong> the apparent savings, an easy trap for
           battery calculators. <strong>Second</strong>: every kWh the battery delivers counts toward
           its cycle life, so capacity fades over the years, and the long-term projections use that
-          fading capacity rather than year-one performance forever.
+          fading capacity rather than year-one performance forever. How much a smaller battery still
+          saves is measured, not guessed: the tool simulates the same year a second time with the
+          battery at its end-of-life capacity. Savings shrink far less than capacity — on most days
+          the battery is held back by the price gap, its power rating or the household's consumption
+          rather than by its size, so the capacity lost first is the least valuable (on the sample
+          data, 70% capacity still earns about 82% of the savings).
         </p>
       </Section>
 

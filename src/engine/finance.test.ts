@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { analyzeInvestment, projectedCapacityFactor, yearlySavings } from "./finance";
+import {
+  analyzeInvestment,
+  projectedCapacityFactor,
+  savingsMultiplier,
+  yearlySavings,
+} from "./finance";
 import { DEFAULT_PARAMS } from "./types";
 
 const battery = DEFAULT_PARAMS.battery; // 6000 cycles → 70%, i.e. 0.005%/cycle
@@ -23,6 +28,35 @@ describe("yearlySavings", () => {
     expect(series[1]).toBeCloseTo((1000 * 0.9625) / 0.9875, 9);
     // Year 3: cycles 1000→1500, factors 0.95 and 0.925, avg 0.9375
     expect(series[2]).toBeCloseTo((1000 * 0.9375) / 0.9875, 9);
+  });
+});
+
+describe("capacity sensitivity", () => {
+  // Measured: at 70% capacity the battery keeps 82% of the savings it made
+  // at year 1's average capacity of 0.99.
+  const sens = { referenceFactor: 0.99, reducedFactor: 0.7, reducedSavingsRatio: 0.82 };
+
+  it("follows the measured line, extended past it and floored at zero", () => {
+    expect(savingsMultiplier(0.99, 0.99, sens)).toBeCloseTo(1, 12);
+    expect(savingsMultiplier(0.7, 0.99, sens)).toBeCloseTo(0.82, 12);
+    // Halfway in capacity → halfway in savings.
+    expect(savingsMultiplier(0.845, 0.99, sens)).toBeCloseTo(0.91, 12);
+    // Below the measured point the same slope continues…
+    expect(savingsMultiplier(0.41, 0.99, sens)).toBeCloseTo(0.64, 12);
+    // …but savings never turn negative.
+    expect(savingsMultiplier(-10, 0.99, sens)).toBe(0);
+  });
+
+  it("falls back to proportional scaling without a measurement", () => {
+    expect(savingsMultiplier(0.9, 0.99, null)).toBeCloseTo(0.9 / 0.99, 12);
+  });
+
+  it("projects later years along the measured line", () => {
+    // 500 cycles/yr: year 2 averages capacity 0.9625 (see yearlySavings above).
+    const series = yearlySavings(1000, 500, battery, 2, sens);
+    expect(series[1]).toBeCloseTo(1000 * (1 - ((0.99 - 0.9625) * 0.18) / 0.29), 9);
+    // Much gentler than proportional scaling (≈ 974.7).
+    expect(series[1]).toBeGreaterThan(yearlySavings(1000, 500, battery, 2)[1]);
   });
 });
 

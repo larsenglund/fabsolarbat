@@ -2,9 +2,9 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { parseMergedCsv, parseNaiveTimestamp } from "../../src/data/parsers/mergedCsv";
-import { annualize } from "../../src/engine/finance";
+import { analyzeInvestment, annualize, DEFAULT_FINANCE } from "../../src/engine/finance";
 import { POWER_TARIFFS } from "../../src/engine/powerTariff";
-import { simulateYear } from "../../src/engine/simulate";
+import { simulateScenario, simulateYear } from "../../src/engine/simulate";
 import { DEFAULT_PARAMS } from "../../src/engine/types";
 
 /**
@@ -313,5 +313,52 @@ describe("effektavgift (Falu Energi & Vatten) on the 2024 dataset", () => {
     expect(annual.annualPowerFeeSavings).toBeCloseTo(fee.savings, 9); // 12 months: bills as-is
     expect(Math.abs(annual.annualPowerFeeSavings - 1478) / 1478).toBeLessThan(0.02);
     expect(Math.abs(annual.annualSavings - 5273) / 5273).toBeLessThan(0.01);
+  });
+});
+
+describe("capacity sensitivity on the 2024 dataset", () => {
+  it("measures how savings fall with capacity and projects payback with it", {
+    timeout: 600_000,
+  }, async () => {
+    const hours = parseMergedCsv(
+      readFileSync(join(process.cwd(), "data", "merged_hourly_data.csv"), "utf8"),
+    );
+    const result = await simulateScenario(hours, { params: DEFAULT_PARAMS });
+    const sens = result.capacitySensitivity;
+    if (!sens) throw new Error("expected a capacity sensitivity");
+
+    // The main pass is the plain simulation.
+    expect(Math.abs(annualize(result).annualSavings - 3977) / 3977).toBeLessThan(0.01);
+    // Year 1 runs at ~99% capacity; the second pass at end of life (70%)
+    // keeps ~82% of the savings — far from the 70% a proportional model
+    // would assume.
+    expect(sens.referenceFactor).toBeGreaterThan(0.98);
+    expect(sens.reducedFactor).toBe(0.7);
+    expect(Math.abs(sens.reducedSavingsRatio - 0.824)).toBeLessThan(0.02);
+
+    // Pinned payback (Landing.tsx REFERENCE: 11–21 yr over 40–75 kSEK).
+    const annual = annualize(result);
+    const payback = (systemCostSek: number) =>
+      analyzeInvestment(
+        annual.annualSavings,
+        annual.annualCycles,
+        DEFAULT_PARAMS.battery,
+        {
+          ...DEFAULT_FINANCE,
+          systemCostSek,
+        },
+        sens,
+      ).paybackYears;
+    expect(payback(75_000)).toBeCloseTo(21.0, 0);
+    expect(payback(40_000)).toBeCloseTo(10.6, 0);
+
+    // No fade to measure → no second pass.
+    const noFade = await simulateScenario(hours.slice(0, 24 * 20), {
+      params: {
+        ...DEFAULT_PARAMS,
+        battery: { ...DEFAULT_PARAMS.battery, eolCapacityPercent: 100 },
+      },
+    });
+    expect(noFade.capacitySensitivity).toBeNull();
   });
 });
