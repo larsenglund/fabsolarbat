@@ -8,7 +8,9 @@ function peakList(peaks: PeakSample[]): string {
   return peaks
     .map((p) => {
       const iso = new Date(p.t).toISOString();
-      return `${iso.slice(5, 10)} ${iso.slice(11, 13)}h ${p.kw.toFixed(1)} kW`;
+      const hour = new Date(p.t).getUTCHours();
+      const span = `${String(hour).padStart(2, "0")}–${String((hour + 1) % 24).padStart(2, "0")}`;
+      return `${iso.slice(5, 10)} ${span} ${p.kw.toFixed(1)} kW`;
     })
     .join(", ");
 }

@@ -56,7 +56,8 @@ export interface PowerTariffDef {
  * fev.se/el/elnat/elnatspriser-privat.html):
  * - billed power = mean of the month's three highest hourly averages, on
  *   three different days;
- * - measured weekdays 07:00–19:00 (hours starting 07…18), excluding public
+ * - measured weekdays 07:00–19:00, i.e. the hours 07–08 through 18–19
+ *   (data rows are labeled by hour start: 07:00 … 18:00), excluding public
  *   holidays, julafton and nyårsafton;
  * - 75 kr/kW per month incl. VAT (60 kr excl.) November–March, the same for
  *   every fuse size; 0 kr/kW April–October.
@@ -87,7 +88,7 @@ export const POWER_TARIFFS: Record<PowerTariffId, PowerTariffDef> = {
     hourWeight: fevHourWeight,
     priceSekPerKwByMonth: [75, 75, 75, 0, 0, 0, 0, 0, 0, 0, 75, 75],
     rules:
-      "In force since 1 November 2025: 75 kr/kW per month (incl. VAT) on the average of the month's three highest hourly power draws, on three different days. Only weekdays 07–19 count (not public holidays, Christmas Eve or New Year's Eve), and only November–March; April–October the fee is 0.",
+      "In force since 1 November 2025: 75 kr/kW per month (incl. VAT) on the average of the month's three highest hourly power draws, on three different days. Only weekday hours between 07:00 and 19:00 count — 07–08 through 18–19 (not public holidays, Christmas Eve or New Year's Eve), and only November–March; April–October the fee is 0.",
     sourceUrl: "https://fev.se/el/elnat/effektavgift.html",
     transferFeeSekPerKwh: 0.5625,
     transferFeeNote: "11.25 öre transfer fee + 45 öre energy tax, both incl. VAT (2026)",

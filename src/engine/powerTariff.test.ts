@@ -33,7 +33,7 @@ describe("Falu Energi & Vatten effektavgift", () => {
   it("measures weekdays 07–19, November–March, except holidays and the eves", () => {
     const w = fev.hourWeight;
     expect(w(at(2024, 1, 10, 7))).toBe(1); // Wednesday 07–08
-    expect(w(at(2024, 1, 10, 18))).toBe(1); // 18–19
+    expect(w(at(2024, 1, 10, 18))).toBe(1); // 18–19, the last measured hour
     expect(w(at(2024, 1, 10, 6))).toBe(0);
     expect(w(at(2024, 1, 10, 19))).toBe(0);
     expect(w(at(2024, 1, 13, 12))).toBe(0); // Saturday
