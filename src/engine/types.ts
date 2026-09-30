@@ -43,6 +43,13 @@ export interface BatteryParams {
 }
 
 export interface TariffParams {
+  /**
+   * What-if multiplier on every hourly spot price in the dataset (1 = as
+   * recorded). Scales the price level and the daily price swings together;
+   * negative prices get more negative. Applied before VAT and fees, to both
+   * purchases and (sell-at-spot) exports.
+   */
+  spotPriceScale: number;
   /** Multiplier on the spot price, e.g. 1.25 for 25% VAT. */
   vatMultiplier: number;
   /** Grid transfer fee in SEK/kWh (incl. VAT). */
@@ -106,6 +113,7 @@ export const DEFAULT_PARAMS: EngineParams = {
     eolCapacityPercent: 70,
   },
   tariff: {
+    spotPriceScale: 1,
     vatMultiplier: 1.25,
     transferFeeSekPerKwh: 0.685,
     fixedMarkupSekPerKwh: 0,
@@ -124,6 +132,7 @@ export const DEFAULT_PARAMS: EngineParams = {
 /** One hour of the executed schedule within a window. */
 export interface HourResult {
   t: number;
+  /** Spot price in SEK/kWh excl. VAT, after spotPriceScale. */
   priceRaw: number;
   fullPrice: number;
   consumptionKwh: number;

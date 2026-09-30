@@ -34,6 +34,7 @@ describe("fullPricePerKwh", () => {
   it("adds retailer markup like the transfer fee", () => {
     expect(
       fullPricePerKwh(1.0, {
+        spotPriceScale: 1,
         vatMultiplier: 1.25,
         transferFeeSekPerKwh: 0.5,
         fixedMarkupSekPerKwh: 0.1,

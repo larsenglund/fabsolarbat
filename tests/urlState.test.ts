@@ -28,6 +28,7 @@ describe("URL scenario codec", () => {
       eolCapacityPercent: 60,
     };
     params.tariff = {
+      spotPriceScale: 1.86,
       vatMultiplier: 1.2,
       transferFeeSekPerKwh: 0.5,
       fixedMarkupSekPerKwh: 0.06,

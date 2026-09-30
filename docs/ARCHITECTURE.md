@@ -97,6 +97,7 @@ interface ScenarioParams {
   };
   house: { maxGridKw: number };     // default √3·20A·400V ≈ 13.9 — v2: not yet an LP constraint
   tariff: {
+    spotPriceScale: number;         // default 1 (what-if multiplier on every hourly spot price)
     vatMultiplier: number;          // default 1.25 (applied to spot)
     transferFeeSekPerKwh: number;   // default 0.685 (incl. VAT)
     fixedMarkupSekPerKwh: number;   // default 0 (retailer påslag)
@@ -124,7 +125,7 @@ interface ScenarioParams {
 
 Variables per hour `t`: `s2b[t]`, `g2b[t]`, `b2h[t]` ≥ 0; `soc[t]` ∈ [effCap·(1−DoD%), effCap·maxCharge%] with effCap = capacity·capFactor (degradation).
 
-Objective: minimize Σ `(g2h[t] + g2b[t]) · fullPrice[t]` − Σ `export[t] · sellPrice[t]` (sell-at-spot model; sellPrice ≡ 0 in no-sell), where `g2h[t] = consumption[t] − b2h[t]` and `fullPrice = spot·VAT + transfer + markup`.
+Objective: minimize Σ `(g2h[t] + g2b[t]) · fullPrice[t]` − Σ `export[t] · sellPrice[t]` (sell-at-spot model; sellPrice ≡ 0 in no-sell), where `g2h[t] = consumption[t] − b2h[t]` and `fullPrice = spot·VAT + transfer + markup`. Here `spot` is the dataset's hourly spot price times `spotPriceScale` (1 by default); the export price `spot + sellBonus` uses the same scaled spot.
 
 Constraints (per hour):
 

@@ -221,8 +221,9 @@ export function InfoPage() {
           approximated · degradation is linear in cycles with no calendar aging · only one
           operator's peak-power tariff (effektavgift) is available so far, and time-of-use transfer
           fees are not modeled · electricity prices and tariffs are assumed to repeat the analyzed
-          year. Most of these nudge results in the battery's favor, so treat the output as an{" "}
-          <strong>optimistic ceiling</strong>, not a promise.
+          year (the spot price level control scales every hourly price as a what-if, but can't
+          reshape a year's pattern). Most of these nudge results in the battery's favor, so treat
+          the output as an <strong>optimistic ceiling</strong>, not a promise.
         </p>
       </Section>
 

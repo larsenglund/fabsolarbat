@@ -38,12 +38,15 @@ export function runWindow(highs: Highs, input: WindowRunInput): WindowRunResult 
   const { battery, strategy } = params;
   const eff = battery.acEfficiency;
   const bounds = socBounds(input.cyclesCompleted, battery);
-  const fullPrice = rows.map((r) => fullPricePerKwh(r.priceSekPerKwh, params.tariff));
+  // Every price below derives from the scaled spot (×1 leaves the golden-
+  // validated numbers bit-identical).
+  const spot = rows.map((r) => r.priceSekPerKwh * params.tariff.spotPriceScale);
+  const fullPrice = spot.map((p) => fullPricePerKwh(p, params.tariff));
   // Export price: spot + bonus in the sell model, identically 0 in no-sell —
   // which reduces every formula below to the golden-validated original.
   const sellPrice =
     strategy.model === "sell-at-spot"
-      ? rows.map((r) => r.priceSekPerKwh + params.tariff.sellBonusSekPerKwh)
+      ? spot.map((p) => p + params.tariff.sellBonusSekPerKwh)
       : rows.map(() => 0);
 
   // Degradation shrinks the ceiling a little every day; SoC carried from
@@ -160,7 +163,7 @@ export function runWindow(highs: Highs, input: WindowRunInput): WindowRunResult 
 
     hourly.push({
       t: row.t,
-      priceRaw: row.priceSekPerKwh,
+      priceRaw: spot[t],
       fullPrice: fullPrice[t],
       consumptionKwh: row.consumptionKwh,
       excessSolarKwh: actualSolar,

@@ -59,6 +59,8 @@ export interface ParamFieldProps {
   /** Detailed plain-language explanation, revealed by the ? button. */
   help: string;
   onChange: (value: number) => void;
+  /** Extra content under the slider (e.g. a derived readout). */
+  children?: ReactNode;
 }
 
 /** Slider paired with a numeric input and an expandable explanation. */
@@ -71,6 +73,7 @@ export function ParamField({
   step,
   help,
   onChange,
+  children,
 }: ParamFieldProps) {
   const id = useId();
   const [open, setOpen] = useState(false);
@@ -116,6 +119,7 @@ export function ParamField({
         onChange={(e) => commit(e.target.value)}
         className="mt-1 w-full accent-accent"
       />
+      {children}
       <HelpText id={`${id}-help`} open={open}>
         {help}
       </HelpText>

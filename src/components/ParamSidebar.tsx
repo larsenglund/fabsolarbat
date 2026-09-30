@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { type ReactNode, useId, useMemo } from "react";
 import { getPowerTariff, POWER_TARIFFS, type PowerTariffId } from "../engine/powerTariff";
 import type { MarketModel, SolarForecastMethod } from "../engine/types";
 import { useAppStore } from "../store/appStore";
@@ -22,6 +22,69 @@ const FORECASTS: { value: SolarForecastMethod; label: string }[] = [
   { value: "persistence", label: "Persistence (yesterday repeats)" },
   { value: "perfect", label: "Perfect (unrealistic upper bound)" },
 ];
+
+const SPOT_SCALE_MIN = 0.25;
+const SPOT_SCALE_MAX = 3;
+const round3 = (x: number) => Math.round(x * 1000) / 1000;
+
+/**
+ * Spot price level: a multiplier on the dataset's hourly spot prices, plus the
+ * resulting average spot price — which can also be typed to hit a target
+ * level directly (e.g. another year's average).
+ */
+function SpotPriceLevel() {
+  const scale = useAppStore((s) => s.params.tariff.spotPriceScale);
+  const dataset = useAppStore((s) => s.dataset);
+  const setParams = useAppStore((s) => s.setParams);
+  const targetId = useId();
+  const meanSpot = useMemo(
+    () =>
+      dataset && dataset.length > 0
+        ? dataset.reduce((s, h) => s + h.priceSekPerKwh, 0) / dataset.length
+        : null,
+    [dataset],
+  );
+  const setScale = (v: number) => setParams({ tariff: { spotPriceScale: v } });
+  const setTarget = (raw: string) => {
+    const n = Number(raw);
+    if (meanSpot === null || !Number.isFinite(n)) return;
+    setScale(Math.min(SPOT_SCALE_MAX, Math.max(SPOT_SCALE_MIN, round3(n / meanSpot))));
+  };
+
+  return (
+    <ParamField
+      label="Spot price level"
+      unit="×"
+      value={scale}
+      min={SPOT_SCALE_MIN}
+      max={SPOT_SCALE_MAX}
+      step={0.05}
+      help="A what-if for other price years: every hourly spot price in the data is multiplied by this factor before VAT and fees are added (1.00 = the prices as recorded). The price level and the daily swings between cheap and expensive hours scale together, and negative prices get more negative — roughly what a pricier, more volatile year looks like. The average below is the plain hourly average of the spot price, excluding VAT; type a target average there to set the factor directly. A single analyzed year can be unusually cheap or expensive (2024 was cheap in SE3, 2022 extremely expensive), so this is a quick way to see how much the result depends on it."
+      onChange={setScale}
+    >
+      {meanSpot !== null && meanSpot > 0.001 && (
+        <div className="mt-1 flex flex-wrap items-baseline justify-between gap-x-2 gap-y-0.5 text-xs text-text-muted">
+          <label htmlFor={targetId} className="whitespace-nowrap" title="Excluding VAT">
+            Avg. spot price
+          </label>
+          <span className="ml-auto flex items-baseline gap-1 whitespace-nowrap tabular-nums">
+            {meanSpot.toFixed(3)} →
+            <input
+              id={targetId}
+              type="number"
+              value={round3(meanSpot * scale)}
+              min={0}
+              step={0.01}
+              onChange={(e) => setTarget(e.target.value)}
+              className="w-16 rounded-md border border-border bg-surface px-1.5 py-0.5 text-right text-xs tabular-nums focus:border-accent focus:outline-none"
+            />
+            kr/kWh
+          </span>
+        </div>
+      )}
+    </ParamField>
+  );
+}
 
 export function ParamSidebar() {
   const params = useAppStore((s) => s.params);
@@ -100,6 +163,7 @@ export function ParamSidebar() {
         </Group>
 
         <Group title="Tariffs & prices">
+          <SpotPriceLevel />
           <ParamField
             label="VAT on spot"
             unit="×"

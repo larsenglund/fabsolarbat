@@ -153,6 +153,39 @@ describe("engine invariants on seeded synthetic data", () => {
     expect(totalS2b).toBeLessThan(0.01);
   });
 
+  it("spotPriceScale is equivalent to scaling the dataset's spot prices", async () => {
+    const hours = syntheticHours(7, 23);
+    const scaled = hours.map((h) => ({ ...h, priceSekPerKwh: h.priceSekPerKwh * 1.86 }));
+    for (const model of ["no-sell", "sell-at-spot"] as const) {
+      const base: EngineParams = {
+        ...DEFAULT_PARAMS,
+        tariff: { ...DEFAULT_PARAMS.tariff, powerTariff: "fev-2025" },
+        strategy: { ...DEFAULT_PARAMS.strategy, model },
+      };
+      const viaParam = await simulateYear(hours, {
+        params: { ...base, tariff: { ...base.tariff, spotPriceScale: 1.86 } },
+        retainHourly: true,
+      });
+      const viaData = await simulateYear(scaled, { params: base, retainHourly: true });
+      expect(viaParam.executedSavings).toBeCloseTo(viaData.executedSavings, 6);
+      expect(viaParam.powerFee?.savings).toBeCloseTo(viaData.powerFee?.savings ?? Number.NaN, 6);
+      const a = viaParam.days[3].hourly ?? [];
+      const b = viaData.days[3].hourly ?? [];
+      expect(a.length).toBeGreaterThan(0);
+      for (let i = 0; i < a.length; i++) {
+        expect(a[i].priceRaw).toBeCloseTo(b[i].priceRaw, 12);
+        expect(a[i].fullPrice).toBeCloseTo(b[i].fullPrice, 12);
+      }
+    }
+
+    // A higher price level makes the same battery worth more.
+    const cheap = await simulateYear(hours, { params: DEFAULT_PARAMS });
+    const dear = await simulateYear(hours, {
+      params: { ...DEFAULT_PARAMS, tariff: { ...DEFAULT_PARAMS.tariff, spotPriceScale: 2 } },
+    });
+    expect(dear.executedSavings).toBeGreaterThan(cheap.executedSavings);
+  });
+
   it("rejects infeasible parameter combinations with readable errors", async () => {
     const hours = syntheticHours(3, 5);
     const b = DEFAULT_PARAMS.battery;

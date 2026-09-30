@@ -93,6 +93,15 @@ const NUM_FIELDS: NumField[] = [
     max: 100,
   },
   {
+    key: "psc",
+    get: (p) => p.tariff.spotPriceScale,
+    set: (p, _f, v) => {
+      p.tariff.spotPriceScale = v;
+    },
+    min: 0,
+    max: 10,
+  },
+  {
     key: "vat",
     get: (p) => p.tariff.vatMultiplier,
     set: (p, _f, v) => {

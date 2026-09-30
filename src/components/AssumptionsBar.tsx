@@ -75,10 +75,22 @@ export function AssumptionsBar() {
   const forecast = useAppStore((s) => s.params.strategy.solarForecast);
   const model = useAppStore((s) => s.params.strategy.model);
   const sellBonus = useAppStore((s) => s.params.tariff.sellBonusSekPerKwh);
+  const spotScale = useAppStore((s) => s.params.tariff.spotPriceScale);
   const powerTariff = getPowerTariff(useAppStore((s) => s.params.tariff.powerTariff));
 
   return (
     <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-text-muted">
+      {spotScale !== 1 && (
+        <>
+          <span
+            className="text-text"
+            title="Every hourly spot price in the data is multiplied by this factor (Spot price level)"
+          >
+            spot prices ×{spotScale.toFixed(2)}
+          </span>
+          <span aria-hidden>·</span>
+        </>
+      )}
       {model === "sell-at-spot" ? (
         <span title="Sweden's former 0.60 kr/kWh tax reduction for exported solar is abolished and not included">
           Sell-at-spot model (export earns spot + {sellBonus.toFixed(2)} kr/kWh)
