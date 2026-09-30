@@ -10,7 +10,7 @@ Would a home battery pay off for you? Find out with your own hourly consumption,
 
 Each simulated day at 13:00 (when Nord Pool publishes tomorrow's hourly prices) the tool plans the battery's charging and discharging over the next 35 hours with a linear-programming optimizer (HiGHS, compiled to WebAssembly) — charge from solar or cheap grid hours, discharge during expensive ones, respecting power limits, efficiency losses and battery degradation. A full year of real data takes a few seconds, and every parameter change re-simulates automatically.
 
-- **Headline answers:** annual savings, payback time, 10-year net result vs putting the money in an index fund — with honest accounting (every hour counted once, degradation included)
+- **Headline answers:** annual savings, payback time, 10-year net result vs putting the money in an index fund — with honest accounting (every hour counted once; degradation included, with its effect on savings measured by re-simulating the year at the battery's end-of-life capacity)
 - **Two market models:** excess solar wasted (no export contract) or sold at spot + export bonus. Sweden's abolished 60 öre/kWh skattereduktion is deliberately not included
 - **Peak-power tariffs (effektavgift):** pick your grid operator's power tariff and the optimizer shaves the measured peaks alongside price arbitrage; the monthly fee is then billed exactly as the operator would, with and without the battery. Currently available: Falu Energi & Vatten (75 kr/kW·month Nov–Mar on the mean of the three highest weekday 07–19 hours, on different days)
 - **Drill all the way down:** monthly savings, a zoomable full-year hourly explorer, and an hour-by-hour dispatch table for any day

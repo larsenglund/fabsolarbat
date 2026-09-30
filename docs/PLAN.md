@@ -8,7 +8,7 @@ The what/when/how of building, testing and deploying the Home Battery Profitabil
 2. Make parameter exploration instant and comparative (scenarios side-by-side, shareable links).
 3. Keep user data private by running everything client-side.
 
-**Non-goals (v1):** live price feeds / API integrations, battery *control* (this is analysis, not automation), accounts or server-side storage, export-revenue tax rebates (skattereduktion) beyond a simple per-kWh credit, effekttariff modeling (pluggable in v2).
+**Non-goals (v1):** live price feeds / API integrations, battery *control* (this is analysis, not automation), accounts or server-side storage, export-revenue tax rebates (skattereduktion) beyond a simple per-kWh credit.
 
 ## Feature set
 
@@ -17,15 +17,15 @@ The what/when/how of building, testing and deploying the Home Battery Profitabil
 - Built-in 2024 SE3 sample dataset, loads instantly on “Explore sample data”
 - Upload own data: canonical CSV, grid-operator export (Swedish locale), ENTSO-E prices + FX (fixed or daily rates, optional UTC shift); explicit format examples + downloadable templates; validation report; IndexedDB persistence with a remove control
 - Full parameter panel (battery, tariffs, strategy, economics — see `ScenarioParams` in ARCHITECTURE.md)
-- Simulation: LP-optimal rolling 35 h day-ahead strategy (HiGHS wasm in a worker); no-sell AND sell-at-spot market models (export earns spot + bonus; Sweden's abolished 60 öre skattereduktion deliberately excluded); 5 solar-forecast modes; degradation; executed-hours accounting for honest annual figures
-- Results: hero stats (savings, payback, ROI/NPV vs index fund), monthly breakdown, 10-year degradation-aware projection, hourly explorer, day drill-down with flows/SoC/table
+- Simulation: LP-optimal rolling 35 h day-ahead strategy (HiGHS wasm in a worker); no-sell AND sell-at-spot market models (export earns spot + bonus; Sweden's abolished 60 öre skattereduktion deliberately excluded); 5 solar-forecast modes; degradation; executed-hours accounting for honest annual figures; optional peak-power tariff (effektavgift) — first preset Falu Energi & Vatten — optimized in the LP and billed exactly
+- Results: hero stats (savings, payback, ROI/NPV vs index fund), monthly breakdown, 10-year degradation-aware projection (savings-vs-capacity measured by a second simulation at end-of-life capacity), per-month effektavgift table, hourly explorer, day drill-down with flows/SoC/table
 - Baseline pin (A/B): freeze the current result as a baseline, see deltas as parameters change; active scenario encoded in the URL for sharing
 - Light/dark themes, responsive down to tablet; mobile gets results-first layout
 
 ### v2 candidates (explicitly out of v1 scope)
 
 - House main-fuse grid-draw cap as an LP constraint
-- Effekttariff (monthly peak-power fees) as a pluggable cost component
+- More grid operators' effekttariffer (the cost component is pluggable — src/engine/powerTariff.ts; v1 ships Falu Energi & Vatten)
 - Battery-size / system-cost sensitivity sweeps (heatmap: capacity × cost → payback)
 - Consumption forecasting (today: perfect within window), EV charging profiles
 - Live spot prices (elprisetjustnu.se API) for “what would the battery do tomorrow?”
@@ -91,7 +91,7 @@ Apply opportunistically with M2/M3 work; none block current functionality:
 
 - **Engine/M2:** `retainHourly` option + per-day progress streaming for the day drill-down (simulate.ts); throw a readable error when no planning window fits the dataset; tsconfig project-references split so browser code stops seeing Node types
 - **Parser/M3:** validate the header line (headerless CSVs currently lose row 1 silently)
-- **Tests:** direct assertions on the execution-adjustment clamp branches (window.ts estimates path); skipped-day executed-hours accounting on a spliced synthetic dataset; fast SoC-carry (hourly[23]) test; finance payback with degradation + horizon boundary; solver retry-after-failure regression test; perfect-foresight SoC-bound invariants on real data
+- **Tests:** direct assertions on the execution-adjustment clamp branches (window.ts estimates path); skipped-day executed-hours accounting on a spliced synthetic dataset; fast SoC-carry test (SoC after the last executed hour); finance payback with degradation + horizon boundary; solver retry-after-failure regression test; perfect-foresight SoC-bound invariants on real data
 - **Docs:** replace ARCHITECTURE's ScenarioParams/HourRecord blocks with the real types from src/engine/types.ts; update the repository-layout tree (planned vs built); generate the 3 day-level golden fixtures the testing table promises, or drop the claim
 
 ## Launch checklist (end of M4)

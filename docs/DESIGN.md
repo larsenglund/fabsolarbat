@@ -59,7 +59,8 @@ Chart series palette (categorical, color-blind-checked in both themes): accent b
 │  sidebar     │  ┌ Hero row: Savings/yr · Payback · ROI ┐   │
 │  (sticky,    │  ├ Cost comparison + 10-yr projection   ┤   │
 │  collapsible │  ├ Monthly breakdown (bars)             ┤   │
-│  groups)     │  ├ Hourly explorer (uPlot, zoomable)    ┤   │
+│  groups)     │  ├ Effektavgift per month (if selected) ┤   │
+│              │  ├ Hourly explorer (uPlot, zoomable)    ┤   │
 │              │  └ Day drill-down (flows + SoC + table) ┘   │
 └──────────────┴─────────────────────────────────────────────┘
 ```
@@ -73,7 +74,8 @@ Chart series palette (categorical, color-blind-checked in both themes): accent b
 5. **Hourly explorer** — full-year price + consumption + solar + SoC as synced uPlot panes; brush to zoom; clicking a day opens the drill-down.
 6. **Day drill-down** — stacked hourly flow chart (S→B, G→B, B→H, G→H) over the price curve, SoC line, and the classic hourly breakdown table from the Python tool; prev/next day paging; “most/least profitable day” shortcuts.
 7. **Upload wizard** — 3 steps (file → mapping/units → validation report). Live-parsed preview table, auto-detected mapping pre-filled, warnings as inline callouts with counts and examples. Ends on a dataset summary card (coverage, totals, average price).
-8. **Assumptions bar** — persistent slim strip above results: model variant, forecast mode, dataset coverage, extrapolation notices. Click to jump to the relevant control.
+8. **Assumptions bar** — persistent slim strip above results: model variant, power tariff, forecast mode, dataset coverage, extrapolation notices. Click to jump to the relevant control.
+9. **Effektavgift panel** — shown when a power tariff is selected: per month the price, billed peak and fee without and with the battery, and the saving; the peak hours behind each bill on demand. Monthly bars stack the effektavgift saving on the energy saving; the drill-down table adds a total grid-draw column with the measured hours in bold.
 
 ## Accessibility
 

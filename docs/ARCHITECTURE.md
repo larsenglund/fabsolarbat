@@ -45,8 +45,11 @@ fabsolarbat/
 │   │   ├── battery.ts       # SoC bounds, degradation, power limits
 │   │   ├── lp.ts            # LP problem builder for one 35 h window (HiGHS)
 │   │   ├── solarForecast.ts # perfect / simple / weighted / hybrid / persistence
-│   │   ├── simulate.ts      # rolling-window annual driver, cycle & SoC carry-over
-│   │   └── finance.ts       # payback, ROI, NPV, index-fund comparison, 10 yr projection
+│   │   ├── powerTariff.ts   # effektavgift presets, peak LP input, exact monthly billing
+│   │   ├── holidays.ts      # Swedish public holidays (tariffs that exclude them)
+│   │   ├── simulate.ts      # rolling-window annual driver, cycle & SoC carry-over,
+│   │   │                    #   simulateScenario = main pass + end-of-life capacity pass
+│   │   └── finance.ts       # annualization, payback, ROI, NPV, index-fund comparison, projection
 │   ├── workers/
 │   │   └── simulation.worker.ts
 │   ├── data/
@@ -146,7 +149,7 @@ Degradation: effective capacity = `usableCapacity · (1 − (1 − eol%) · cycl
 UI thread                     Worker
 ────────────                  ──────────────────────────────
 params/dataset change  ──►    debounce (~300 ms) → LP year   ──► per-day progress events
-                                                             ──► AnnualResult (cached by hash)
+                              + same year at EOL capacity    ──► AnnualResult + capacitySensitivity
 ```
 
 One engine, one source of truth. While a run is in flight the previous results stay visible but dimmed, with a slim progress bar; results are memoized by hash(params + dataset) so revisiting a setting is instant. If full-year runs ever prove too slow on low-end devices, the fallback is a coarse preview strategy — deliberately not built until proven necessary.
@@ -165,7 +168,7 @@ One engine, one source of truth. While a run is in flight the previous results s
 - Timestamp parsing (small fixed-format parser) incl. DST duplicated/missing hour, gap detection, coverage summary
 - Negative/absurd values flagged; unit sanity heuristics (e.g. consumption mean ≫ 100 ⇒ probably W not kWh — suggest, don't auto-fix)
 - Price series and energy series may have different date ranges → intersect, report dropped hours
-- Datasets shorter than a year are allowed; annualized figures are extrapolated and clearly labeled
+- Datasets shorter or longer than a year are allowed; figures are scaled to a year (energy by 8760 h / executed hours, power fees by 12 / months covered) and clearly labeled
 
 **Persistence:** parsed dataset cached locally via idb-keyval so a reload doesn't require re-upload. Explicit "remove my data" control.
 

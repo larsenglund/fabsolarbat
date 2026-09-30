@@ -42,9 +42,13 @@ export interface SimulateOptions {
  *   hour; subsequent windows start exactly 24 h later.
  * - Each window covers `windowHours` consecutive ROWS from the start row
  *   (index-based, like df.iloc — a missing DST hour shifts the window end).
- * - The SoC after window hour index 23 (12:00 next day) carries into the next
- *   window; discharged energy accumulates cycles which degrade capacity.
+ * - Only the hours until the next window starts are executed (24, or 23
+ *   across the DST gap); the SoC after the last executed hour carries into
+ *   the next window, and the executed discharge accumulates the cycles that
+ *   degrade capacity.
  * - Days whose start timestamp is missing from the data are skipped.
+ * - With a power tariff, the month's executed peaks feed each window's LP.
+ * (pythonParity restores the Python driver's bookkeeping; see SimulateOptions.)
  */
 export async function simulateYear(
   hours: HourRecord[],

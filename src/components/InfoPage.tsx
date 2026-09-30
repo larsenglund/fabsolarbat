@@ -62,7 +62,9 @@ export function InfoPage() {
           every purchased kWh, which makes avoided purchases more valuable than the spot price alone
           suggests. Selling (if the sell model is on): exported solar earns{" "}
           <strong>spot price + export bonus</strong> — no VAT on what you sell, and Sweden's former
-          0.60 kr/kWh tax reduction is abolished, so it's deliberately not included.
+          0.60 kr/kWh tax reduction is abolished, so it's deliberately not included. If you select
+          your grid operator's power tariff, a monthly fee per kW of peak draw comes on top — see
+          "Peak-power fees" below.
         </p>
       </Section>
 
@@ -104,7 +106,9 @@ export function InfoPage() {
           this morning actually turned out. When the plan is then "executed" against what the sun
           really did, surprises are handled sensibly: shortfalls reduce charging, and the battery
           never exceeds its limits. This gap between plan and reality is exactly what a real system
-          experiences, which keeps the results honest.
+          experiences, which keeps the results honest. The forecast setting applies to solar only:
+          the household's consumption is still taken as known for the whole planning window (see the
+          limits at the end of this page).
         </p>
       </Section>
 
